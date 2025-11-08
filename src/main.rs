@@ -1,23 +1,23 @@
-#![allow(unused_variables, unused)]
+#![allow(unused_variables, dead_code)]
 mod lexer;
 mod parser;
 mod types;
 mod interp;
 
 use interp::interp;
-use lexer::Tokens;
+use lexer::{Tokens, PeekableLexer};
 
 use logos::Logos;
 use std::{env, fs};
 
-
 fn main() {
     let filename = env::args().nth(1).expect("Expected file argument");
     let src = fs::read_to_string(&filename).expect("Failed to read file");
-    let mut lexer = <Tokens as Logos>::lexer(&src);
+    let lexer = <Tokens as Logos>::lexer(&src);
+    let mut peeker = PeekableLexer::new(lexer);
 
-    let parsed = parser::parser(&mut lexer);
+    let parsed = parser::parser(&mut peeker);
 
     // println!("{:?}", e.expect("Err"));
-    interp(&parsed.expect("Err"));
+    interp(&parsed.expect("Err")).unwrap();
 }

@@ -1,5 +1,30 @@
-use logos::Logos;
+use logos::{Lexer, Logos, Span};
 
+
+pub struct PeekableLexer<'a, T: Logos<'a>> {
+    lexer: Lexer<'a, T>,
+    peeker: Option<Result<T, T::Error>>
+}
+
+impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
+    pub fn new(mut lexer: Lexer<'a, T>) -> Self {
+        let peeker = lexer.next();
+        Self { lexer, peeker }
+    }
+
+    pub fn next(&mut self) -> Option<Result<T, T::Error>> {
+        let peeked = self.peeker.take();
+        self.peeker = self.lexer.next();
+        peeked
+    }
+    pub fn span(&self) -> Span {
+        self.lexer.span()
+    }
+
+    pub fn peek(&self) -> &Option<Result<T, T::Error>> {
+        &self.peeker
+    }
+}
 
 
 #[derive(Logos, Debug, PartialEq, Eq)]

@@ -1,15 +1,12 @@
-use std::ops::Range;
-use logos::Lexer;
-use crate::lexer::Tokens;
+use crate::lexer::{PeekableLexer, Tokens};
 use crate::types::Datum::{Bool, Int, Null};
+use crate::types::Expr::Datum;
 use crate::types::{Expr, Program, Statement};
-use crate::types::Expr::{Datum};
+use std::ops::Range;
 
-type Lex<'a> = Lexer<'a, Tokens>;
 type ParseResult<T> = Result<T, (String, Range<usize>)>;
 
-
-pub fn parser(lexer: &mut Lex) -> ParseResult<Program> {
+pub fn parser(lexer: &mut PeekableLexer<Tokens>) -> ParseResult<Program> {
     let mut program = Program::new();
     while let Some(statement) = parse_statement(lexer) {
         program.push(statement?)
@@ -17,7 +14,7 @@ pub fn parser(lexer: &mut Lex) -> ParseResult<Program> {
     Ok(program)
 }
 
-fn parse_statement(lexer: &mut Lex) -> Option<ParseResult<Statement>> {
+fn parse_statement(lexer: &mut PeekableLexer<Tokens>) -> Option<ParseResult<Statement>> {
     match lexer.next()? {
         Err(_) => Some(Err(("Unrecognized token".to_owned(), lexer.span()))),
         Ok(Tokens::Print) => Some(parse_print(lexer)),
@@ -25,19 +22,19 @@ fn parse_statement(lexer: &mut Lex) -> Option<ParseResult<Statement>> {
     }
 }
 
-fn parse_print(lexer: &mut Lex) -> ParseResult<Statement> {
+fn parse_print(lexer: &mut PeekableLexer<Tokens>) -> ParseResult<Statement> {
     let x = parse_expr(lexer)?;
     assert_token(lexer, Tokens::Semicolon, ";")?;
     Ok(Statement::Print(x))
 }
 
-fn parse_statement_expr(lexer: &mut Lex) -> ParseResult<Statement> {
+fn parse_statement_expr(lexer: &mut PeekableLexer<Tokens>) -> ParseResult<Statement> {
     let x = parse_expr(lexer)?;
     assert_token(lexer, Tokens::Semicolon, ";")?;
     Ok(Statement::Expr(x))
 }
 
-fn parse_expr(lexer: &mut Lex) -> ParseResult<Expr> {
+fn parse_expr(lexer: &mut PeekableLexer<Tokens>) -> ParseResult<Expr> {
     match lexer.next() {
         Some(Ok(Tokens::LParen)) => {
             let expr = parse_expr(lexer)?;
@@ -53,7 +50,7 @@ fn parse_expr(lexer: &mut Lex) -> ParseResult<Expr> {
 }
 
 
-fn assert_token(lexer: &mut Lex, token: Tokens, s: &str) -> ParseResult<()> {
+fn assert_token(lexer: &mut PeekableLexer<Tokens>, token: Tokens, s: &str) -> ParseResult<()> {
     match lexer.next() {
         Some(Ok(t)) if t == token => Ok(()),
         Some(Err(_)) => Err(("Unrecognized token".to_owned(), lexer.span())),

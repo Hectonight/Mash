@@ -90,6 +90,7 @@ Prefix =
 AfterOps =
 | ( Expr )
 | Datum
+| Id
 
  */
 
@@ -105,6 +106,7 @@ pub enum Statement {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
     Datum(Datum),
+    Identifier(String)
 }
 
 #[derive(Debug, PartialEq, Eq)]

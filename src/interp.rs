@@ -4,7 +4,7 @@ type ResultValue = Result<Value, String>;
 
 pub fn interp(program: &Program) -> ResultValue {
     for statement in program {
-        interp_statement(statement);
+        interp_statement(statement)?;
     }
     Ok(Value::Int(0))
 }
@@ -32,7 +32,8 @@ fn printer(value: &Value) {
 
 fn interp_expr(expr: &Expr) -> ResultValue {
     match expr {
-        Expr::Datum(x) => Ok(match_datum(x))
+        Expr::Datum(x) => Ok(match_datum(x)),
+        _ => Err("wat".to_owned())
     }
 }
 
