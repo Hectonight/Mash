@@ -5,14 +5,92 @@ Program = Statement*
 Statement =
 | Expr ;
 | print Expr ;
+| let Id Assignment Expr ;
+
+Assignment =
+| =
+| +=
+| -=
+| |=
+| *=
+| /=
+| ^=
+| &=
+| %=
+| <<=
+| >>=
 
 Expr =
 | ( Expr )
 | Datum
+| Id
+| Or
 
 Datum =
 | Bool
 | Int
+| Null
+
+Ternary =
+| Or ? Or : Or
+
+Or =
+| Or || Or
+| And
+
+And =
+| And && And
+| BitOr
+
+BitOr =
+| BitOr | BitOr
+| BitXor
+
+BitXor =
+| BitXor ^ BitXor
+| BitAnd
+
+BitAnd =
+| BitAnd & BitAnd
+| Equality
+
+Equality =
+| Equality == Equality
+| Equality != Equality
+| Relational
+
+Relational =
+| Relational < Relational
+| Relational > Relational
+| Relational <= Relational
+| Relational >= Relational
+| BitShift
+
+BitShift =
+| BitShift << BitShift
+| BitShift >> BitShift
+
+AddSub =
+| AddSub + AddSub
+| AddSub - AddSub
+
+MultDivMod =
+| MultDivMod * MultDivMod
+| MultDivMod / MultDivMod
+| MultDivMod % MultDivMod
+| Prefix
+
+Prefix =
+| ~ Prefix
+| + Prefix
+| - Prefix
+| ! Prefix
+| AfterOps
+
+AfterOps =
+| ( Expr )
+| Datum
+
  */
 
 

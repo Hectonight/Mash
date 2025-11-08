@@ -58,6 +58,9 @@ pub enum Tokens {
     #[token("}")]
     RCurly,
 
+    #[token("?")]
+    QuestionMark,
+
     #[token("&")]
     Ampersand,
 
