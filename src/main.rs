@@ -1,4 +1,4 @@
-#![allow(unused_variables, dead_code)]
+#![allow(unused_variables, dead_code, unused_imports)]
 mod lexer;
 mod parser;
 mod types;
@@ -18,6 +18,16 @@ fn main() {
 
     let parsed = parser::parser(&mut peeker);
 
-    // println!("{:?}", e.expect("Err"));
-    interp(&parsed.expect("Err")).unwrap();
+    interp(parsed.expect("Err")).unwrap();
+    // parse_str()
+}
+
+fn parse_str(s: &str) {
+    let lexer = <Tokens as Logos>::lexer(s);
+    let mut peeker = PeekableLexer::new(lexer);
+    // while let Some(peek) = peeker.next() {
+    //     println!("{:?}", peek);
+    // }
+    let parsed = parser::parser(&mut peeker);
+    // let _ = dbg!(parsed);
 }

@@ -27,6 +27,9 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
 }
 
 
+
+
+
 #[derive(Logos, Debug, PartialEq, Eq)]
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 pub enum Tokens {
@@ -48,7 +51,7 @@ pub enum Tokens {
     Bool(bool),
 
     #[regex(r"[a-zA-Z_]\w*", |lex| lex.slice().to_owned())]
-    Id(String),
+    Identifier(String),
 
     #[token("(")]
     LParen,
@@ -57,7 +60,7 @@ pub enum Tokens {
     RParen,
 
     #[token("=")]
-    Equals,
+    Equal,
 
     #[token("+")]
     Plus,
