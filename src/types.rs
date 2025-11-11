@@ -101,7 +101,7 @@ AfterOps =
 
  */
 use std::cmp::Ordering;
-use crate::lexer::Tokens;
+use crate::lexer::Token;
 
 pub type CodeBlock = Vec<Statement>;
 pub type Program = CodeBlock;
@@ -110,7 +110,7 @@ pub type Program = CodeBlock;
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
     Expr(Expr),
-    // If(Expr, Box<CodeBlock>, Option<Box<Statement>>),
+    If(Expr, Box<CodeBlock>, Option<Box<CodeBlock>>),
     Print(Expr)
 }
 
