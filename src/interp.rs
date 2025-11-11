@@ -1,23 +1,53 @@
-use crate::types::{Datum, Expr, Ops, Program, Statement, Value};
+use crate::types::{CodeBlock, Datum, Expr, Ops, Program, Statement, Value};
 
 type ResultValue = Result<Value, String>;
+type ResultUnit = Result<(), String>;
 
-pub fn interp(program: Program) -> ResultValue {
-    for statement in program {
-        interp_statement(statement)?;
-    }
-    Ok(Value::Int(0))
+
+pub fn interp(program: Program) -> Result<i64, String> {
+    interp_codeblock(program)?;
+    Ok(0)
 }
 
-fn interp_statement(statement: Statement) -> ResultValue {
+fn interp_codeblock(codeblock: CodeBlock) -> ResultUnit {
+    for statement in codeblock {
+        interp_statement(statement)?;
+    }
+    Ok(())
+}
+
+fn interp_statement(statement: Statement) -> ResultUnit {
     match statement {
-        Statement::Expr(e) => interp_expr(e),
+        Statement::Expr(e) => { interp_expr(e)?; Ok(()) },
         Statement::Print(e) => {
             let x = interp_expr(e)?;
             printer(&x);
-            Ok(x)
+            Ok(())
         }
-        _ => todo!()
+        Statement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block),
+    }
+}
+
+fn interp_if(expr: Expr, codeblock: CodeBlock, elifs: Vec<(Expr,CodeBlock)>, else_block: Option<CodeBlock>) -> ResultUnit {
+    match interp_expr(expr)? {
+        Value::Bool(true) => interp_codeblock(codeblock),
+        Value::Bool(false) => {
+
+            for (e, block) in elifs {
+                match interp_expr(e)? {
+                    Value::Bool(false) => (),
+                    Value::Bool(true) => return interp_codeblock(block),
+                    _ => return Err("Type Error".to_owned())
+                }
+            }
+
+            if let Some(block) = else_block {
+                interp_codeblock(block)
+            } else {
+                Ok(())
+            }
+        }
+        _ => Err("Type Error".to_owned())
     }
 }
 
@@ -35,13 +65,12 @@ fn interp_expr(expr: Expr) -> ResultValue {
     match expr {
         Expr::Datum(x) => Ok(interp_datum(&x)),
         Expr::Op(op) => interp_ops(op),
-        _ => Err("Undefined expression".to_owned())
+        _ => Err("Undefined Expression".to_owned())
     }
 }
 
 fn interp_ops(op: Ops) -> ResultValue {
     match op {
-
         Ops::Ternary(a, b, c) => {
             match interp_expr(*a)? {
                 Value::Bool(true) => interp_expr(*b),

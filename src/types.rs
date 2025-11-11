@@ -110,7 +110,7 @@ pub type Program = CodeBlock;
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
     Expr(Expr),
-    If(Expr, Box<CodeBlock>, Option<Box<CodeBlock>>),
+    If(Expr, CodeBlock, Vec<(Expr, CodeBlock)>, Option<CodeBlock>),
     Print(Expr)
 }
 

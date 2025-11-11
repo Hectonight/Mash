@@ -1,7 +1,8 @@
 use crate::lexer::{PeekableLexer, Token};
 use crate::types::{Datum, Expr, Ops, Program, Statement, Value};
 use std::ops::Range;
-
+use logos::Lexer;
+use crate::lexer;
 
 type ParseResult<T> = Result<T, (String, Range<usize>)>;
 
@@ -14,31 +15,84 @@ fn unexpected_eof<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
     Err(("Unexpected end of input".to_owned(), lexer.span()))
 }
 fn unexpected_token<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
-    Err(("Unexpected token {token}".to_owned(), lexer.span()))
+    Err(("Unexpected token".to_owned(), lexer.span()))
 }
 
 
 pub fn parser(lexer: &mut PeekableLexer<Token>) -> ParseResult<Program> {
     let mut program = Program::new();
-    while let Some(statement) = parse_statement(lexer) {
+    while let Some(statement) = parse_statement_option(lexer) {
         program.push(statement?)
     }
     Ok(program)
 }
 
-fn parse_statement(lexer: &mut PeekableLexer<Token>) -> Option<ParseResult<Statement>> {
+fn parse_statement_option(lexer: &mut PeekableLexer<Token>) -> Option<ParseResult<Statement>> {
     match lexer.peek() {
-        None => None,
-        Some(Err(_)) => Some(unrecognized_token(lexer)),
-        Some(Ok(Token::Print)) => { lexer.next(); Some(parse_print(lexer)) },
-        Some(Ok(Token::If)) => { lexer.next(); Some(parse_if(lexer)) }
-        _ => { Some(parse_statement_expr(lexer)) }
+        Some(_) => Some(parse_statement(lexer)),
+        None => None
+    }
+
+}
+
+fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
+    match lexer.peek() {
+        Some(Err(_)) => unrecognized_token(lexer),
+        Some(Ok(Token::Print)) => { lexer.next(); parse_print(lexer) },
+        Some(Ok(Token::If)) => { lexer.next(); parse_if(lexer) }
+        None => unrecognized_token(lexer),
+        _ => parse_statement_expr(lexer)
     }
 }
 
 fn parse_if(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
+    let e = parse_expr(lexer)?;
+    let mut elif = vec![];
+    let codeblock_initial = parse_codeblock_no_semi(lexer)?;
+    while let Some(Ok(Token::Else)) = lexer.peek() {
+        lexer.next();
+        match lexer.next() {
+            Some(Ok(Token::If)) => elif.push((parse_expr(lexer)?, parse_codeblock_no_semi(lexer)?)),
+            Some(Ok(Token::LCurly)) => return Ok(Statement::If(e,codeblock_initial,elif,Some(parse_code_block_rest(lexer)?))),
+            None => return unexpected_eof(lexer),
+            Some(Err(_)) => return unrecognized_token(lexer),
+            Some(_) => return unexpected_token(lexer),
+        }
+    }
+    optional_token(lexer, Token::Semicolon);
+    Ok(Statement::If(e,codeblock_initial,elif,None))
+}
 
-    todo!()
+fn parse_codeblock(lexer: &mut PeekableLexer<Token>) -> ParseResult<Vec<Statement>> {
+    assert_token(lexer, Token::LCurly, "{")?;
+    parse_code_block_rest(lexer)
+}
+
+fn parse_code_block_rest(lexer: &mut PeekableLexer<Token>) -> ParseResult<Vec<Statement>> {
+    let parsed = parse_codeblock_no_semi_rest(lexer)?;
+    optional_token(lexer, Token::Semicolon);
+    Ok(parsed)
+}
+
+fn parse_codeblock_no_semi(lexer: &mut PeekableLexer<Token>) -> ParseResult<Vec<Statement>> {
+    assert_token(lexer, Token::LCurly, "{")?;
+    parse_codeblock_no_semi_rest(lexer)
+}
+
+fn parse_codeblock_no_semi_rest(lexer: &mut PeekableLexer<Token>) -> ParseResult<Vec<Statement>> {
+    let mut statements = vec![];
+    loop {
+        match lexer.peek() {
+            None => return unexpected_eof(lexer),
+            Some(Err(_)) => return unrecognized_token(lexer),
+            Some(Ok(Token::RCurly)) => {
+                lexer.next();
+
+                return Ok(statements);
+            }
+            Some(Ok(_)) => statements.push(parse_statement(lexer)?)
+        }
+    }
 }
 
 fn parse_print(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
@@ -230,8 +284,7 @@ fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
         Some(Ok(Token::Null))          => Ok(Expr::Datum(Datum::Null)),
         None => unexpected_eof(lexer),
         Some(Err(_)) => unrecognized_token(lexer),
-        Some(x) => unexpected_token(lexer, x),
-
+        Some(x) => unexpected_token(lexer),
     }
 }
 
@@ -245,3 +298,8 @@ fn assert_token(lexer: &mut PeekableLexer<Token>, token: Token, s: &str) -> Pars
     }
 }
 
+fn optional_token(lexer: &mut PeekableLexer<Token>, token: Token) {
+    if *lexer.peek() == Some(Ok(token)) {
+        lexer.next();
+    }
+}

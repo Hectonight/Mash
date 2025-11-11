@@ -9,7 +9,6 @@ use lexer::{Token, PeekableLexer};
 
 use logos::Logos;
 use std::{env, fs};
-use crate::parser::unexpected_token;
 
 fn main() {
     let filename = env::args().nth(1).expect("Expected file argument");
@@ -17,11 +16,11 @@ fn main() {
     let lexer = <Token as Logos>::lexer(&src);
     let mut peeker = PeekableLexer::new(lexer);
 
-    // let parsed = parser::parser(&mut peeker);
+    let parsed = parser::parser(&mut peeker);
     //
-    // interp(parsed.expect("Err")).unwrap();
+    interp(parsed.expect("Err")).unwrap();
     // parse_str()
-    dbg!(unexpected_token(&mut peeker, Token::Tilde)).expect("TODO: panic message");
+    // dbg!(unexpected_token(&mut peeker)).expect("panic message");
 
 }
 
