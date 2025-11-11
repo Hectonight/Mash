@@ -10,13 +10,11 @@ fn unrecognized_token<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
     Err(("Unrecognized token".to_owned(), lexer.span()))
 }
 
-
 fn unexpected_eof<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
     Err(("Unexpected end of input".to_owned(), lexer.span()))
 }
-
-fn unexpected_token<T>(lexer: &mut PeekableLexer<Token>, token: Token) -> ParseResult<T> {
-    Err((format!("Unexpected token {token}"), lexer.span()))
+fn unexpected_token<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
+    Err(("Unexpected token {token}".to_owned(), lexer.span()))
 }
 
 

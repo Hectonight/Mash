@@ -1,4 +1,4 @@
-#![allow(unused_variables, dead_code, unused_imports)]
+#![allow(unused_variables, dead_code, unused_imports, unused_mut)]
 mod lexer;
 mod parser;
 mod types;
@@ -9,6 +9,7 @@ use lexer::{Token, PeekableLexer};
 
 use logos::Logos;
 use std::{env, fs};
+use crate::parser::unexpected_token;
 
 fn main() {
     let filename = env::args().nth(1).expect("Expected file argument");
@@ -16,10 +17,12 @@ fn main() {
     let lexer = <Token as Logos>::lexer(&src);
     let mut peeker = PeekableLexer::new(lexer);
 
-    let parsed = parser::parser(&mut peeker);
-
-    interp(parsed.expect("Err")).unwrap();
+    // let parsed = parser::parser(&mut peeker);
+    //
+    // interp(parsed.expect("Err")).unwrap();
     // parse_str()
+    dbg!(unexpected_token(&mut peeker, Token::Tilde)).expect("TODO: panic message");
+
 }
 
 fn parse_str(s: &str) {

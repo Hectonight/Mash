@@ -29,8 +29,7 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
 
 
 
-
-#[derive(Logos, Debug, PartialEq, Eq)]
+#[derive(Logos, Debug, PartialEq, Eq, Clone)]
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 pub enum Token {
 
