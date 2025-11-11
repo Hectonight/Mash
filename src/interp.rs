@@ -17,6 +17,7 @@ fn interp_statement(statement: Statement) -> ResultValue {
             printer(&x);
             Ok(x)
         }
+        _ => todo!()
     }
 }
 
