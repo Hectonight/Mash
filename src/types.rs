@@ -101,6 +101,7 @@ AfterOps =
 
  */
 use std::cmp::Ordering;
+use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
 use crate::lexer::Token;
 
 pub type CodeBlock = Vec<Statement>;
@@ -111,7 +112,8 @@ pub type Program = CodeBlock;
 pub enum Statement {
     Expr(Expr),
     If(Expr, CodeBlock, Vec<(Expr, CodeBlock)>, Option<CodeBlock>),
-    Print(Expr)
+    Print(Expr),
+    Let(String, Expr)
 }
 
 // All recursive Expr will be in a box
@@ -166,9 +168,181 @@ pub enum Value {
     Void
 }
 
+pub(crate) type ResultValue = Result<Value, String>;
+pub(crate) type ResultUnit = Result<(), String>;
 
-// impl PartialOrd for Tokens {
-//     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-//         // match  {  }
-//     }
-// }
+impl Add for Value {
+    type Output = ResultValue;
+    fn add(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a + b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Sub for Value {
+    type Output = ResultValue;
+    fn sub(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a - b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+
+impl Mul for Value {
+    type Output = ResultValue;
+    fn mul(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a * b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Div for Value {
+    type Output = ResultValue;
+    fn div(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a / b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Not for Value {
+    type Output = ResultValue;
+    fn not(self) -> Self::Output {
+        match self {
+            Value::Int(a) =>  Ok(Value::Int(!a)),
+            Value::Bool(a) =>  Ok(Value::Bool(!a)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Neg for Value {
+    type Output = ResultValue;
+    fn neg(self) -> Self::Output {
+        match self {
+            Value::Int(a) => Ok(Value::Int(-a)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl BitOr for Value {
+    type Output = ResultValue;
+    fn bitor(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a | b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl BitXor for Value {
+    type Output = ResultValue;
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a ^ b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl BitAnd for Value {
+    type Output = ResultValue;
+    fn bitand(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a & b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Rem for Value {
+    type Output = ResultValue;
+    fn rem(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a % b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Shl for Value {
+    type Output = ResultValue;
+
+    fn shl(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a << b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Shr for Value {
+    type Output = ResultValue;
+
+    fn shr(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a >> b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}
+
+impl Value {
+    pub(crate) fn equal(self, rhs: Self) -> ResultValue {
+        Ok(Value::Bool(self == rhs))
+    }
+
+    pub(crate) fn not_equal(self, rhs: Self) -> ResultValue {
+        Ok(Value::Bool(self != rhs))
+    }
+
+    pub(crate) fn less(self, rhs: Self) -> ResultValue {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a < b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+
+    pub(crate) fn less_eq(self, rhs: Self) -> ResultValue {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a <= b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+
+    pub(crate) fn greater(self, rhs: Self) -> ResultValue {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a > b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+
+    pub(crate) fn greater_eq(self, rhs: Self) -> ResultValue {
+        match (self, rhs) {
+            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a >= b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+
+    pub(crate) fn and(self, rhs: Self) -> ResultValue {
+        match (self, rhs) {
+            (Value::Bool(a), Value::Bool(b)) =>  Ok(Value::Bool(a && b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+
+    pub(crate) fn or(self, rhs: Self) -> ResultValue {
+        match (self, rhs) {
+            (Value::Bool(a), Value::Bool(b)) =>  Ok(Value::Bool(a || b)),
+            _ => Err("Type Error".to_owned())
+        }
+    }
+}

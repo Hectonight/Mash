@@ -1,48 +1,95 @@
-use crate::types::{CodeBlock, Datum, Expr, Ops, Program, Statement, Value};
+use std::collections::HashMap;
+use std::ops::{Neg, Not};
+use std::ptr::hash;
+use logos::Lexer;
+use crate::lexer::Token;
+use crate::lexer::Token::Int;
+use crate::types::{CodeBlock, Datum, Expr, Ops, Program, ResultUnit, ResultValue, Statement, Value};
 
-type ResultValue = Result<Value, String>;
-type ResultUnit = Result<(), String>;
 
+struct Environment {
+    environment: Vec<HashMap<String, Value>>,
+}
+
+impl Environment {
+    fn new() -> Self {
+        Environment { environment: vec![] }
+    }
+
+    fn new_environment(&mut self) {
+        self.environment.push(HashMap::new());
+    }
+
+    fn pop_environment(&mut self) {
+        self.environment.pop();
+    }
+
+    fn lookup(&self, key: &String) -> Option<&Value> {
+        for env in self.environment.iter().rev() {
+            if let Some(val) = env.get(key) {
+                return Some(val);
+            }
+        }
+        None
+    }
+
+    fn insert(&mut self, s: String, v: Value) {
+        let l = self.environment.len();
+        self.environment[l - 1].insert(s, v);
+    }
+}
 
 pub fn interp(program: Program) -> Result<i64, String> {
-    interp_codeblock(program)?;
+    let mut interpreter = Environment::new();
+    interp_codeblock(program, &mut interpreter)?;
     Ok(0)
 }
 
-fn interp_codeblock(codeblock: CodeBlock) -> ResultUnit {
+fn interp_codeblock(codeblock: CodeBlock, env: &mut Environment) -> ResultUnit {
+    env.new_environment();
     for statement in codeblock {
-        interp_statement(statement)?;
+        interp_statement(statement, env)?;
     }
+    env.pop_environment();
     Ok(())
 }
 
-fn interp_statement(statement: Statement) -> ResultUnit {
+fn interp_statement(statement: Statement, env: &mut Environment) -> ResultUnit {
     match statement {
-        Statement::Expr(e) => { interp_expr(e)?; Ok(()) },
+        Statement::Expr(e) => { interp_expr(e, env)?; Ok(()) },
         Statement::Print(e) => {
-            let x = interp_expr(e)?;
+            let x = interp_expr(e, env)?;
             printer(&x);
             Ok(())
         }
-        Statement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block),
+        Statement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
+        Statement::Let(s, e) => interp_let(s, e, env),
     }
 }
 
-fn interp_if(expr: Expr, codeblock: CodeBlock, elifs: Vec<(Expr,CodeBlock)>, else_block: Option<CodeBlock>) -> ResultUnit {
-    match interp_expr(expr)? {
-        Value::Bool(true) => interp_codeblock(codeblock),
+fn interp_let(s: String, expr: Expr, env: &mut Environment) -> ResultUnit {
+    let v = interp_expr(expr, env)?;
+    env.insert(s, v);
+    Ok(())
+}
+
+
+fn interp_if(expr: Expr, codeblock: CodeBlock, elifs: Vec<(Expr,CodeBlock)>,
+             else_block: Option<CodeBlock>, env: &mut Environment) -> ResultUnit {
+    match interp_expr(expr, env)? {
+        Value::Bool(true) => interp_codeblock(codeblock, env),
         Value::Bool(false) => {
 
             for (e, block) in elifs {
-                match interp_expr(e)? {
+                match interp_expr(e, env)? {
                     Value::Bool(false) => (),
-                    Value::Bool(true) => return interp_codeblock(block),
+                    Value::Bool(true) => return interp_codeblock(block, env),
                     _ => return Err("Type Error".to_owned())
                 }
             }
 
             if let Some(block) = else_block {
-                interp_codeblock(block)
+                interp_codeblock(block, env)
             } else {
                 Ok(())
             }
@@ -61,149 +108,50 @@ fn printer(value: &Value) {
 }
 
 
-fn interp_expr(expr: Expr) -> ResultValue {
+fn interp_expr(expr: Expr, env: &Environment) -> ResultValue {
     match expr {
         Expr::Datum(x) => Ok(interp_datum(&x)),
-        Expr::Op(op) => interp_ops(op),
-        _ => Err("Undefined Expression".to_owned())
+        Expr::Identifier(s) => {
+            if let Some(v) = env.lookup(&s) {
+                Ok(*v)
+            } else {
+                Err("Undefined Identifier ".to_owned() + &*s)
+            }
+        }
+        Expr::Op(op) => interp_ops(op, env),
     }
 }
 
-fn interp_ops(op: Ops) -> ResultValue {
+fn interp_ops(op: Ops, env: &Environment) -> ResultValue {
     match op {
         Ops::Ternary(a, b, c) => {
-            match interp_expr(*a)? {
-                Value::Bool(true) => interp_expr(*b),
-                Value::Bool(false) => interp_expr(*c),
+            match interp_expr(*a, env)? {
+                Value::Bool(true) => interp_expr(*b, env),
+                Value::Bool(false) => interp_expr(*c, env),
                 _ => Err("Type Error".to_owned())
             }
         }
-        Ops::Not(a) => {
-            match interp_expr(*a)? {
-                Value::Bool(a) => Ok(Value::Bool(!a)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::BitNot(a) => {
-            match interp_expr(*a)? {
-                Value::Int(a) => Ok(Value::Int(!a)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Neg(a) => {
-            match interp_expr(*a)? {
-                Value::Int(a) => Ok(Value::Int(-a)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Pos(a) => {
-            match interp_expr(*a)? {
-                Value::Int(a) => Ok(Value::Int(a)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Plus(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Minus(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a - b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Mul(a, b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a * b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Div(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a / b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Mod(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a % b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Eq(a,b) => {
-            Ok(Value::Bool(interp_expr(*a)? == interp_expr(*b)?))
-        }
-        Ops::Neq(a,b) => {
-            Ok(Value::Bool(interp_expr(*a)? != interp_expr(*b)?))
-        }
-        Ops::Lt(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a < b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Leq(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a <= b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Gt(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a > b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Geq(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a >= b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::And(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a && b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::Or(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a || b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::BitAnd(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a & b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::BitOr(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a | b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::BitXor(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a ^ b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::BitShiftLeft(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a << b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
-        Ops::BitShiftRight(a,b) => {
-            match (interp_expr(*a)?, interp_expr(*b)?) {
-                (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a >> b)),
-                _ => Err("Type Error".to_owned())
-            }
-        }
+        Ops::Pos(a) => interp_expr(*a, env),
+        Ops::Neg(a) => interp_expr(*a, env)?.neg(),
+        Ops::Not(a) | Ops::BitNot(a) => interp_expr(*a, env)?.not(),
+        Ops::Plus(a, b) => interp_expr(*a, env)? + interp_expr(*b, env)?,
+        Ops::Minus(a, b) => interp_expr(*a, env)? - interp_expr(*b, env)?,
+        Ops::Mul(a,b) => interp_expr(*a, env)? * interp_expr(*b, env)?,
+        Ops::Div(a,b) => interp_expr(*a, env)? / interp_expr(*b, env)?,
+        Ops::Mod(a,b) => interp_expr(*a, env)? % interp_expr(*b, env)?,
+        Ops::Gt(a,b) => interp_expr(*a, env)?.greater(interp_expr(*b, env)?),
+        Ops::Lt(a,b) => interp_expr(*a, env)?.less(interp_expr(*b, env)?),
+        Ops::Geq(a,b) => interp_expr(*a, env)?.greater_eq(interp_expr(*b, env)?),
+        Ops::Leq(a,b) => interp_expr(*a, env)?.less_eq(interp_expr(*b, env)?),
+        Ops::Neq(a,b) => interp_expr(*a, env)?.not_equal(interp_expr(*b, env)?),
+        Ops::Eq(a,b) => interp_expr(*a, env)?.equal(interp_expr(*b, env)?),
+        Ops::And(a,b) => interp_expr(*a, env)?.and(interp_expr(*b, env)?),
+        Ops::Or(a,b) => interp_expr(*a, env)?.or(interp_expr(*b, env)?),
+        Ops::BitAnd(a,b) => interp_expr(*a, env)? & interp_expr(*b, env)?,
+        Ops::BitOr(a,b) => interp_expr(*a, env)? | interp_expr(*b, env)?,
+        Ops::BitXor(a,b) => interp_expr(*a, env)? ^ interp_expr(*b, env)?,
+        Ops::BitShiftLeft(a,b) => interp_expr(*a, env)? << interp_expr(*b, env)?,
+        Ops::BitShiftRight(a,b) => interp_expr(*a, env)? >> interp_expr(*b, env)?,
     }
 }
 

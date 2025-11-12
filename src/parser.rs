@@ -40,8 +40,23 @@ fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
         Some(Err(_)) => unrecognized_token(lexer),
         Some(Ok(Token::Print)) => { lexer.next(); parse_print(lexer) },
         Some(Ok(Token::If)) => { lexer.next(); parse_if(lexer) }
+        Some(Ok(Token::Let)) => {lexer.next(); parse_let(lexer) }
         None => unrecognized_token(lexer),
         _ => parse_statement_expr(lexer)
+    }
+}
+
+fn parse_let(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
+    match lexer.next() {
+        Some(Ok(Token::Identifier(s))) => {
+            assert_token(lexer, Token::Equal, "=")?;
+            let e = parse_expr(lexer)?;
+            assert_token(lexer, Token::Semicolon, ";")?;
+            Ok(Statement::Let(s, e))
+        }
+        None => unexpected_eof(lexer),
+        Some(Err(_)) => unrecognized_token(lexer),
+        _ => unexpected_token(lexer),
     }
 }
 
@@ -178,11 +193,11 @@ fn parse_bitand(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
 
 fn parse_equality(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
     let mut lhs = parse_relational(lexer)?;
-    while let Some(Ok(Token::Equal | Token::NotEqual)) = lexer.peek() {
+    while let Some(Ok(Token::DoubleEqual | Token::NotEqual)) = lexer.peek() {
         let token = lexer.next().unwrap().unwrap();
         let rhs = parse_relational(lexer)?;
         lhs = match token {
-            Token::Equal => Expr::Op(Ops::Eq(Box::new(lhs), Box::new(rhs))),
+            Token::DoubleEqual => Expr::Op(Ops::Eq(Box::new(lhs), Box::new(rhs))),
             Token::NotEqual => Expr::Op(Ops::Neq(Box::new(lhs), Box::new(rhs))),
             _ => unreachable!()
         }
