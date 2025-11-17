@@ -19,15 +19,11 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
 
     match instr {
         | Mov(dest @ Reg(R8(_)), source @ Reg(R8(_)))
-        | Mov(dest @ Reg(R8(_)), source @ Mem(_))
-        | Mov(dest @ Reg(R8(_)), source @ Imm(_))
         | Mov(dest @ Reg(R16(_)), source @ Reg(R16(_)))
         | Mov(dest @ Reg(R32(_)), source @ Reg(R32(_)))
-        | Mov(dest @ Reg(R32(_)), source @ Imm(_))
-        | Mov(dest @ Reg(R32(_)), source @ Mem(_))
         | Mov(dest @ Reg(R64(_)), source @ Reg(R64(_)))
-        | Mov(dest @ Reg(R64(_)), source @ Mem(_))
-        | Mov(dest @ Reg(R64(_)), source @ Imm(_))
+        | Mov(dest @ Reg(_), source @ Mem(_))
+        | Mov(dest @ Reg(_), source @ Imm(_))
         | Mov(dest @ Mem(_), source @ Reg(_))
         => format!("mov {}, {}", dest, source),
         | Mov(dest @ Mem(_), source @ Imm(_))
