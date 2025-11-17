@@ -8,7 +8,10 @@ use crate::inter_rep::Register::{R8, R16, R32, R64};
 use crate::reg;
 
 pub fn ir_to_asm(program: AsmProg) -> String {
-    let s = program.iter().map(instr_to_asm).collect::<Vec<String>>().join("\n");
+    let s = program.iter()
+        .map(instr_to_asm)
+        .collect::<Vec<String>>()
+        .join("\n");
     s
 }
 
@@ -16,9 +19,15 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
 
     match instr {
         | Mov(dest @ Reg(R8(_)), source @ Reg(R8(_)))
+        | Mov(dest @ Reg(R8(_)), source @ Mem(_))
+        | Mov(dest @ Reg(R8(_)), source @ Imm(_))
         | Mov(dest @ Reg(R16(_)), source @ Reg(R16(_)))
         | Mov(dest @ Reg(R32(_)), source @ Reg(R32(_)))
+        | Mov(dest @ Reg(R32(_)), source @ Imm(_))
+        | Mov(dest @ Reg(R32(_)), source @ Mem(_))
         | Mov(dest @ Reg(R64(_)), source @ Reg(R64(_)))
+        | Mov(dest @ Reg(R64(_)), source @ Mem(_))
+        | Mov(dest @ Reg(R64(_)), source @ Imm(_))
         | Mov(dest @ Mem(_), source @ Reg(_))
         => format!("mov {}, {}", dest, source),
         | Mov(dest @ Mem(_), source @ Imm(_))
@@ -476,6 +485,6 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | CMovnz(dest @ R64(_), source @ Mem(_))
         => format!("cmovnz {}, {}", dest, source),
 
-        _ => unimplemented!()
+        _ => unimplemented!("No match for {:?}", instr)
     }
 }

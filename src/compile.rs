@@ -1,5 +1,7 @@
 use std::fs::write;
 use std::process::Command;
+use crate::compile_to_ir::compile_to_ir;
+use crate::ir_asm::ir_to_asm;
 use crate::types::Program;
 
 pub fn compile(program: Program) {
@@ -10,8 +12,8 @@ pub fn compile(program: Program) {
 
 
 fn write_s(program: Program) {
-
-    let mut s = String::from("");
+    let ir = compile_to_ir(&program);
+    let s = ir_to_asm(ir);
 
     let asm = format!(
 r#"section .note.GNU-stack
@@ -20,11 +22,12 @@ global main
 section .text
 main:
     {}
+    xor rax, rax
     ret
 "#, s);
 
     // Write the assembly to disk
-    write("../out/out.s", asm).unwrap();
+    write("./out/out.s", asm).unwrap();
 }
 
 fn compile_o(file: &str) {

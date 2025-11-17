@@ -7,6 +7,7 @@ mod compile;
 mod folding;
 mod inter_rep;
 mod ir_asm;
+mod compile_to_ir;
 
 use interp::interp;
 use lexer::{Token, PeekableLexer};
@@ -24,14 +25,16 @@ fn main() {
 
 
 
-    // let filename = env::args().nth(1).expect("Expected file argument");
-    // let src = fs::read_to_string(&filename).expect("Failed to read file");
-    // let lexer = Token::lexer(&src);
-    //
-    //
-    // let mut peeker = PeekableLexer::new(lexer);
-    //
-    // let parsed = parser::parser(&mut peeker);
+    let filename = env::args().nth(1).expect("Expected file argument");
+    let src = fs::read_to_string(&filename).expect("Failed to read file");
+    let lexer = Token::lexer(&src);
+
+
+    let mut peeker = PeekableLexer::new(lexer);
+
+    let parsed = parser::parser(&mut peeker);
+    compile(parsed.unwrap());
+
     //
     // interp(parsed.expect("Err")).unwrap();
 

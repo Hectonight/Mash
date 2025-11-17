@@ -123,6 +123,7 @@ impl Display for Register {
 }
 
 
+#[derive(Debug)]
 pub enum IRInst {
     Global(Label),
     Extern(Label),
