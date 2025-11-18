@@ -1,8 +1,5 @@
 use crate::inter_rep::{IRInst, Imm, Label, Operand, Register};
 
-// pub fn mov<A: Into<Operand>, B: Into<Operand>>(a: A, b: B) -> IRInst {
-//     IRInst::Mov(a.into(), b.into())
-// }
 
 #[macro_export]
 macro_rules! make_op_op {
