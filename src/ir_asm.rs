@@ -193,7 +193,7 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | IMul(Reg(dest @ R32(_)), Some(source @ Mem(_)), Some(i))
         | IMul(Reg(dest @ R64(_)), Some(source @ Reg(R64(_))), Some(i))
         | IMul(Reg(dest @ R64(_)), Some(source @ Mem(_)), Some(i))
-        => format!("mul {}, {} {}", dest, source, i),
+        => format!("mul {}, {}, {}", dest, source, i),
 
         | Lea(dest @ R16(_), source @ Imm(_))
         | Lea(dest @ R16(_), source @ Mem(_))
