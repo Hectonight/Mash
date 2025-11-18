@@ -4,7 +4,7 @@ use std::ptr::hash;
 use logos::Lexer;
 use crate::lexer::Token;
 use crate::lexer::Token::Int;
-use crate::types::{CodeBlock, Datum, Expr, Ops, Program, ResultUnit, ResultValue, Statement, Value};
+use crate::types::{CodeBlock, Datum, Expr, Ops, Program, ResultUnit, ResultValue, Statement, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement, Value};
 
 
 struct Environment {
@@ -39,13 +39,13 @@ impl Environment {
     }
 }
 
-pub fn interp(program: Program) -> Result<i64, String> {
+pub fn interp(program: TypedProgram) -> Result<i64, String> {
     let mut interpreter = Environment::new();
     interp_codeblock(program, &mut interpreter)?;
     Ok(0)
 }
 
-fn interp_codeblock(codeblock: CodeBlock, env: &mut Environment) -> ResultUnit {
+fn interp_codeblock(codeblock: TypedCodeBlock, env: &mut Environment) -> ResultUnit {
     env.new_environment();
     for statement in codeblock {
         interp_statement(statement, env)?;
@@ -54,16 +54,16 @@ fn interp_codeblock(codeblock: CodeBlock, env: &mut Environment) -> ResultUnit {
     Ok(())
 }
 
-fn interp_statement(statement: Statement, env: &mut Environment) -> ResultUnit {
+fn interp_statement(statement: TypedStatement, env: &mut Environment) -> ResultUnit {
     match statement {
-        Statement::Expr(e) => { interp_expr(e, env)?; Ok(()) },
-        Statement::Print(e) => {
+        TypedStatement::Expr((e, _)) => { interp_expr(e, env)?; Ok(()) },
+        TypedStatement::Print((e, _)) => {
             let x = interp_expr(e, env)?;
             printer(&x);
             Ok(())
         }
-        Statement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
-        Statement::Let(s, e) => interp_let(s, e, env),
+        TypedStatement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
+        TypedStatement::Let(s, (e, _)) => interp_let(s, e, env),
     }
 }
 
@@ -74,13 +74,14 @@ fn interp_let(s: String, expr: Expr, env: &mut Environment) -> ResultUnit {
 }
 
 
-fn interp_if(expr: Expr, codeblock: CodeBlock, elifs: Vec<(Expr,CodeBlock)>,
-             else_block: Option<CodeBlock>, env: &mut Environment) -> ResultUnit {
+fn interp_if(typed_expr: TypedExpr, codeblock: TypedCodeBlock, elifs: Vec<(TypedExpr,TypedCodeBlock)>,
+             else_block: Option<TypedCodeBlock>, env: &mut Environment) -> ResultUnit {
+    let (expr, _) = typed_expr;
     match interp_expr(expr, env)? {
         Value::Bool(true) => interp_codeblock(codeblock, env),
         Value::Bool(false) => {
 
-            for (e, block) in elifs {
+            for ((e, _), block) in elifs {
                 match interp_expr(e, env)? {
                     Value::Bool(false) => (),
                     Value::Bool(true) => return interp_codeblock(block, env),

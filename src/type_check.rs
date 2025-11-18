@@ -38,21 +38,21 @@ impl TEnv {
     }
 }
 
-pub fn typify(program: &Program) -> Result<TypedProgram, String> {
+pub fn typify(program: Program) -> Result<TypedProgram, String> {
     let mut tenv = TEnv::new();
-    program.iter().map(|s| typify_statement(s, &mut tenv)).collect()
+    program.into_iter().map(|s| typify_statement(s, &mut tenv)).collect()
 }
 
-fn typify_codeblock(codeblock: &CodeBlock, tenv: &mut TEnv) -> Result<TypedCodeBlock, String> {
+fn typify_codeblock(codeblock: CodeBlock, tenv: &mut TEnv) -> Result<TypedCodeBlock, String> {
     tenv.new_environment();
-    let tcb = codeblock.iter().map(|s| typify_statement(s, tenv)).collect();
+    let tcb = codeblock.into_iter().map(|s| typify_statement(s, tenv)).collect();
     tenv.pop_environment();
     tcb
 }
 
 
 
-fn typify_statement(statement: &Statement, tenv: &mut TEnv) -> Result<TypedStatement, String> {
+fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatement, String> {
     match statement {
         Statement::Expr(e) => Ok(TypedStatement::Expr(typify_expr(e, tenv)?)),
         Statement::If(e, cb, elifs, eb) =>
@@ -60,9 +60,9 @@ fn typify_statement(statement: &Statement, tenv: &mut TEnv) -> Result<TypedState
                 let s = "conditional if".to_owned();
                 Ok(TypedStatement::If(assert_typify_expr(e, Type::Bool, s.clone(), tenv)?,
                                       typify_codeblock(cb, tenv)?,
-                                      elifs.iter().map(|pair| {
-                                          Ok((assert_typify_expr(e, Type::Bool, s.clone(), tenv)?,
-                                              typify_codeblock(cb, tenv)?))
+                                      elifs.into_iter().map(|(ex, tcb)| {
+                                          Ok((assert_typify_expr(ex, Type::Bool, s.clone(), tenv)?,
+                                              typify_codeblock(tcb, tenv)?))
                                       }).collect::<Result<Vec<_>, String>>()?,
                                       match eb {
                                           Some(cb) => Some(typify_codeblock(cb, tenv)?),
@@ -72,7 +72,7 @@ fn typify_statement(statement: &Statement, tenv: &mut TEnv) -> Result<TypedState
         Statement::Print(e) => Ok(TypedStatement::Print(typify_expr(e, tenv)?)),
         Statement::Let(id, e) => {
             let (t, ex) = typify_expr(e, tenv)?;
-            if tenv.member(id) {
+            if tenv.member(&id) {
                 return Err(format!("{} defined multiple times", id))
             }
             tenv.insert(id.clone(), ex);
@@ -82,13 +82,14 @@ fn typify_statement(statement: &Statement, tenv: &mut TEnv) -> Result<TypedState
     }
 
 
-fn typify_expr(expr: &Expr, tenv: &TEnv) -> Result<TypedExpr, String> {
-    Ok((expr.clone(), expr_type(expr, tenv)?))
+fn typify_expr(expr: Expr, tenv: &TEnv) -> Result<TypedExpr, String> {
+    let t = expr_type(&expr, tenv)?;
+    Ok((expr, t))
 }
 
 fn expr_type(expr: &Expr, tenv: &TEnv) -> Result<Type, String> {
     match expr {
-        Expr::Datum(d) => Ok(datum_type(d)),
+        Expr::Datum(d) => Ok(datum_type(&d)),
         Expr::Identifier(id) => match tenv.lookup(&id) {
             Some(t) => Ok(*t),
             None => Err(format!("Unknown identifier {}", id)),
@@ -219,7 +220,7 @@ fn op_type(ops: &Ops, tenv: &TEnv) -> Result<Type, String> {
     }
 }
 
-fn assert_typify_expr(expr: &Expr, t: Type, msg: String, tenv: &TEnv) -> Result<TypedExpr, String> {
+fn assert_typify_expr(expr: Expr, t: Type, msg: String, tenv: &TEnv) -> Result<TypedExpr, String> {
     let (e, ty) = typify_expr(expr, tenv)?;
     if t != ty {
         return Err(format!("Expected type {} in {} expression. Found {}.", t, msg, ty))
