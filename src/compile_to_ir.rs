@@ -42,15 +42,6 @@ fn compile_print(te: &TypedExpr) -> AsmProg {
         Type::Bool => todo!(),
         Type::Null => todo!()
     }
-
-    // vec![
-    //     push(R15),
-    //     mov(R15, RSP),
-    //     and(R15, 0b1000),
-    //     add(RSP, R15),
-    //     extern
-    // ]
-    //
 }
 
 fn compile_print_int(e: &Expr) -> AsmProg {
