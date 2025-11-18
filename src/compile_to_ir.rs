@@ -4,7 +4,7 @@ use crate::inter_rep::IRInst::{Mov, Ret, Section};
 use crate::inter_rep::Operand::{Imm, Reg};
 use crate::inter_rep::R64::RAX;
 use crate::constructors::{global, label, mov, section, xor};
-use crate::types::{Datum, Expr, Program, Statement};
+use crate::types::{Datum, Expr, TypedExpr, TypedStatement as Statement, TypedProgram as Program};
 
 
 pub fn compile_to_ir(program: &Program) -> AsmProg {
@@ -28,7 +28,7 @@ pub fn compile_to_ir(program: &Program) -> AsmProg {
 
 fn compile_statement(statement: &Statement) -> AsmProg {
     match statement {
-        Statement::Expr(e) => compile_expr(e),
+        Statement::Expr((e, _)) => compile_expr(e),
         Statement::If(_, _, _, _) => todo!(),
         Statement::Print(_) => todo!(),
         Statement::Let(_, _) => todo!(),

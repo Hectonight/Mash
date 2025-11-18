@@ -18,6 +18,7 @@ use lexer::{Token, PeekableLexer};
 
 use logos::Logos;
 use std::{env, fs};
+use std::path::Path;
 use crate::compile::compile;
 use crate::inter_rep::IRInst::Mov;
 use crate::inter_rep::Operand::{Imm, Reg};
@@ -37,7 +38,9 @@ fn main() {
     let mut peeker = PeekableLexer::new(lexer);
 
     let parsed = parser::parser(&mut peeker);
-    compile(parsed.unwrap());
+    let t = type_check::typify(parsed.unwrap());
+    let path = Path::new(&filename);
+    compile(t.unwrap(), path).expect("Failed to compile");
 
     //
     // interp(parsed.expect("Err")).unwrap();
