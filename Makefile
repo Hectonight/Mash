@@ -15,7 +15,7 @@ mash: src
 	cargo build  --color=always --package mash --bin mash --profile dev
 
 runtime.o: $(objs)
-	ld -r $(objs) -o runtime.o
+	ld -r $(objs) -o runtime/runtime.o
 
 %.run: %.o runtime.o
 	$(LANGS_CC) runtime/runtime.o $< -o $@
@@ -36,7 +36,7 @@ clean:
 
 
 %: %.o runtime.o
-	$(LANGS_CC) out/$< runtime.o -o out/$@
+	$(LANGS_CC) out/$< runtime/runtime.o -o out/$@
 
 
 
