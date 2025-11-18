@@ -19,4 +19,5 @@ Please see:
 - [inter_rep.rs](src/inter_rep.rs)
 - [constructors.rs](src/constructors.rs)
 - [lexer.rs](src/lexer.rs)
+- [type_check.rs](src/type_check.rs)
 - [compile_to_ir](src/compile_to_ir.rs) (Template is there, implementation is a work in progress)

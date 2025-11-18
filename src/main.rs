@@ -11,6 +11,7 @@ mod compile_to_ir;
 
 #[macro_use]
 mod constructors;
+mod type_check;
 
 use interp::interp;
 use lexer::{Token, PeekableLexer};

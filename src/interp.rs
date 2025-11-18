@@ -13,7 +13,7 @@ struct Environment {
 
 impl Environment {
     fn new() -> Self {
-        Environment { environment: vec![] }
+        Self { environment: vec![] }
     }
 
     fn new_environment(&mut self) {

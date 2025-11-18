@@ -101,14 +101,13 @@ AfterOps =
 
  */
 use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
 use crate::lexer::Token;
 
-pub type CodeBlock = Vec<Statement>;
-pub type Program = CodeBlock;
 
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Statement {
     Expr(Expr),
     If(Expr, CodeBlock, Vec<(Expr, CodeBlock)>, Option<CodeBlock>),
@@ -116,15 +115,47 @@ pub enum Statement {
     Let(String, Expr)
 }
 
+#[derive(Debug)]
+pub enum TypedStatement {
+    Expr(TypedExpr),
+    If(TypedExpr, TypedCodeBlock, Vec<(TypedExpr, TypedCodeBlock)>, Option<TypedCodeBlock>),
+    Print(TypedExpr),
+    Let(String, TypedExpr)
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Type {
+    Int,
+    Bool,
+    Null,
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Type::Int => "int",
+            Type::Bool => "bool",
+            Type::Null => "null"
+        })
+    }
+}
+
+pub type Program = CodeBlock;
+pub type TypedProgram = TypedCodeBlock;
+pub type CodeBlock = Vec<Statement>;
+pub type TypedCodeBlock = Vec<TypedStatement>;
+pub type TypedExpr = (Expr, Type);
+
+
 // All recursive Expr will be in a box
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Datum(Datum),
     Identifier(String),
     Op(Ops)
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum Ops {
     Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
     Not(Box<Expr>),
@@ -152,7 +183,7 @@ pub enum Ops {
 }
 
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Datum {
     Int(i64),
     Bool(bool),
