@@ -13,18 +13,7 @@ pub fn compile(program: Program) {
 
 fn write_s(program: Program) {
     let ir = compile_to_ir(&program);
-    let s = ir_to_asm(ir);
-
-    let asm = format!(
-r#"section .note.GNU-stack
-global main
-
-section .text
-main:
-    {}
-    xor rax, rax
-    ret
-"#, s);
+    let asm = ir_to_asm(ir);
 
     // Write the assembly to disk
     write("./out/out.s", asm).unwrap();

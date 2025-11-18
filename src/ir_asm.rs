@@ -34,6 +34,7 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Extern(s) => format!("extern {}", s),
         | Label(s) => format!("{}:", s),
         | Global(s) => format!("global {}", s),
+        | Section(s) => format!("section {}", s),
         | Syscall => String::from("syscall"),
         | Ret => String::from("ret"),
         | Call(s) => format!("call {}", s),
@@ -73,9 +74,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Test(dest @ Reg(_), source @ Imm(_))
         | Test(dest @ Reg(_), source @ Mem(_))
         | Test(dest @ Mem(_), source @ Reg(_))
-        => format!("test {} {}", dest, source),
+        => format!("test {}, {}", dest, source),
         | Test(dest @ Mem(_), source @ Imm(_))
-        => format!("test qword {} {}", dest, source),
+        => format!("test qword {}, {}", dest, source),
 
         | And(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | And(dest @ Reg(R16(_)), source @ Reg(R16(_)))
@@ -84,9 +85,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | And(dest @ Reg(_), source @ Imm(_))
         | And(dest @ Reg(_), source @ Mem(_))
         | And(dest @ Mem(_), source @ Reg(_))
-        => format!("and {} {}", dest, source),
+        => format!("and {}, {}", dest, source),
         | And(dest @ Mem(_), source @ Imm(_))
-        => format!("and qword {} {}", dest, source),
+        => format!("and qword {}, {}", dest, source),
 
         | Or(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | Or(dest @ Reg(R16(_)), source @ Reg(R16(_)))
@@ -95,9 +96,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Or(dest @ Reg(_), source @ Imm(_))
         | Or(dest @ Reg(_), source @ Mem(_))
         | Or(dest @ Mem(_), source @ Reg(_))
-        => format!("or {} {}", dest, source),
+        => format!("or {}, {}", dest, source),
         | Or(dest @ Mem(_), source @ Imm(_))
-        => format!("or qword {} {}", dest, source),
+        => format!("or qword {}, {}", dest, source),
 
         | Xor(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | Xor(dest @ Reg(R16(_)), source @ Reg(R16(_)))
@@ -106,9 +107,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Xor(dest @ Reg(_), source @ Imm(_))
         | Xor(dest @ Reg(_), source @ Mem(_))
         | Xor(dest @ Mem(_), source @ Reg(_))
-        => format!("xor {} {}", dest, source),
+        => format!("xor {}, {}", dest, source),
         | Xor(dest @ Mem(_), source @ Imm(_))
-        => format!("xor qword {} {}", dest, source),
+        => format!("xor qword {}, {}", dest, source),
 
         | Add(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | Add(dest @ Reg(R16(_)), source @ Reg(R16(_)))
@@ -117,9 +118,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Add(dest @ Reg(_), source @ Imm(_))
         | Add(dest @ Reg(_), source @ Mem(_))
         | Add(dest @ Mem(_), source @ Reg(_))
-        => format!("add {} {}", dest, source),
+        => format!("add {}, {}", dest, source),
         | Add(dest @ Mem(_), source @ Imm(_))
-        => format!("add qword {} {}", dest, source),
+        => format!("add qword {}, {}", dest, source),
 
         | Sub(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | Sub(dest @ Reg(R16(_)), source @ Reg(R16(_)))
@@ -128,9 +129,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Sub(dest @ Reg(_), source @ Imm(_))
         | Sub(dest @ Reg(_), source @ Mem(_))
         | Sub(dest @ Mem(_), source @ Reg(_))
-        => format!("cmp {} {}", dest, source),
+        => format!("cmp {}, {}", dest, source),
         | Sub(dest @ Mem(_), source @ Imm(_))
-        => format!("cmp qword {} {}", dest, source),
+        => format!("cmp qword {}, {}", dest, source),
 
         | Cmp(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | Cmp(dest @ Reg(R16(_)), source @ Reg(R16(_)))
@@ -139,9 +140,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Cmp(dest @ Reg(_), source @ Imm(_))
         | Cmp(dest @ Reg(_), source @ Mem(_))
         | Cmp(dest @ Mem(_), source @ Reg(_))
-        => format!("cmp {} {}", dest, source),
+        => format!("cmp {}, {}", dest, source),
         | Cmp(dest @ Mem(_), source @ Imm(_))
-        => format!("cmp qword {} {}", dest, source),
+        => format!("cmp qword {}, {}", dest, source),
 
         | Pop(dest @ Reg(R16(_)))
         | Pop(dest @ Reg(R64(_)))
@@ -183,7 +184,7 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | IMul(Reg(dest @ R64(_)), Some(source @ Reg(R64(_))), None)
         | IMul(Reg(dest @ R64(_)), Some(source @ Mem(_)), None)
         | IMul(Reg(dest @ R64(_)), Some(source @ Imm(_)), None)
-        => format!("imul {} {}", dest, source),
+        => format!("imul {}, {}", dest, source),
         | IMul(Mem(dest), None, None)
         => format!("mul qword {}", dest),
         | IMul(Reg(dest @ R16(_)), Some(source @ Reg(R16(_))), Some(i))
@@ -192,7 +193,7 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | IMul(Reg(dest @ R32(_)), Some(source @ Mem(_)), Some(i))
         | IMul(Reg(dest @ R64(_)), Some(source @ Reg(R64(_))), Some(i))
         | IMul(Reg(dest @ R64(_)), Some(source @ Mem(_)), Some(i))
-        => format!("mul {} {} {}", dest, source, i),
+        => format!("mul {}, {} {}", dest, source, i),
 
         | Lea(dest @ R16(_), source @ Imm(_))
         | Lea(dest @ R16(_), source @ Mem(_))

@@ -1,15 +1,29 @@
 use crate::inter_rep::{AsmProg, IRInst};
 use crate::inter_rep::Imm::Int;
-use crate::inter_rep::IRInst::Mov;
+use crate::inter_rep::IRInst::{Mov, Ret, Section};
 use crate::inter_rep::Operand::{Imm, Reg};
 use crate::inter_rep::R64::RAX;
-use crate::reg;
+use crate::constructors::{global, label, mov, section, xor};
 use crate::types::{Datum, Expr, Program, Statement};
 
+
 pub fn compile_to_ir(program: &Program) -> AsmProg {
-    program.iter()
-        .flat_map(|s| compile_statement(s))
-        .collect::<AsmProg>()
+    let mut asm = vec![
+        section(".note.GNU-stack"),
+        global("main"),
+        section(".text"),
+        label("main"),
+    ];
+    asm.append(
+        &mut program.iter()
+            .flat_map(|s| compile_statement(s))
+            .collect::<AsmProg>()
+    );
+    asm.append(&mut vec![
+        xor(RAX, RAX),
+        Ret
+    ]);
+    asm
 }
 
 fn compile_statement(statement: &Statement) -> AsmProg {
@@ -30,10 +44,10 @@ fn compile_expr(expr: &Expr) -> AsmProg {
 }
 
 fn compile_datum(datum: &Datum) -> AsmProg {
-    match datum {
-        Datum::Int(i) => vec![Mov(Reg(reg!(RAX)),Imm(Int(*i as i128)))],
-        Datum::Bool(_) => todo!(),
+    vec![match datum {
+        Datum::Int(i) => mov(RAX, *i),
+        Datum::Bool(b) => todo!(),
         Datum::Null => todo!()
-    }
+    }]
 }
 

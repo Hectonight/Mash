@@ -25,9 +25,20 @@ macro_rules! define_registers {
                 Register::$regname(reg)
             }
         }
+
+        impl From<$regname> for Operand {
+            fn from(reg: $regname) -> Operand {
+                Operand::Reg(Register::from(reg))
+            }
+        }
     };
 }
 
+impl From<Register> for Operand {
+    fn from(reg: Register) -> Operand {
+        Operand::Reg(reg)
+    }
+}
 
 #[macro_export]
 macro_rules! reg {
@@ -126,6 +137,7 @@ impl Display for Register {
 #[derive(Debug)]
 pub enum IRInst {
     Global(Label),
+    Section(String),
     Extern(Label),
     Label(Label),
     Mov(Operand, Operand),
@@ -290,13 +302,71 @@ impl Display for Imm {
     }
 }
 
-
-
 pub type AsmProg = Vec<IRInst>;
 pub type Label = String;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Cond {
-    E, NE, L, LE, G, GE, A, AE, B, BE, C, Z, ZE, NL, NG, NGE,
-    NLE, NA, NB, NAE, NBE, O, P, NO, NP, S, PO, PE, NS, NZ
+impl From<Mem> for Operand {
+    fn from(value: Mem) -> Self {
+        Operand::Mem(value)
+    }
 }
+
+macro_rules! impl_int {
+    ($t:ty) => {
+        impl From<$t> for Imm {
+            fn from(value: $t) -> Self {
+                Imm::Int(value as i128)
+            }
+        }
+
+        impl From<$t> for Operand {
+            fn from(value: $t) -> Self {
+                Operand::Imm(value.into())
+            }
+        }
+    };
+}
+
+
+impl_int!(i8);
+impl_int!(i16);
+impl_int!(i32);
+impl_int!(i64);
+impl_int!(i128);
+impl_int!(isize);
+
+impl_int!(u8);
+impl_int!(u16);
+impl_int!(u32);
+impl_int!(u64);
+impl_int!(usize);
+
+impl From<String> for Imm {
+    fn from(value: String) -> Self {
+        Imm::Label(value)
+    }
+}
+
+impl From<String> for Operand {
+    fn from(value: String) -> Self {
+        Operand::Imm(Imm::from(value))
+    }
+}
+
+impl From<&str> for Imm {
+    fn from(value: &str) -> Self {
+        Imm::Label(String::from(value))
+    }
+}
+
+impl From<&str> for Operand {
+    fn from(value: &str) -> Self {
+        Operand::Imm(Imm::from(value))
+    }
+}
+
+
+
+
+
+

@@ -9,6 +9,9 @@ mod inter_rep;
 mod ir_asm;
 mod compile_to_ir;
 
+#[macro_use]
+mod constructors;
+
 use interp::interp;
 use lexer::{Token, PeekableLexer};
 
