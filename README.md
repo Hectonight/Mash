@@ -5,7 +5,7 @@
 - Compiles down to NASM, from there NASM and GCC are used.
 - Use `objdump -d` to see the disassembled output.
 - This repository will be updating frequently as I progress in the project!
-
+- Proper testing coming soon!
 
 
 ## Documentation coming soon!
