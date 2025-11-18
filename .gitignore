@@ -2,3 +2,6 @@
 /progs
 .idea
 /out
+*.o
+*.run
+*.s
