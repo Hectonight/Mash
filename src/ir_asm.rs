@@ -129,9 +129,9 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Sub(dest @ Reg(_), source @ Imm(_))
         | Sub(dest @ Reg(_), source @ Mem(_))
         | Sub(dest @ Mem(_), source @ Reg(_))
-        => format!("cmp {}, {}", dest, source),
+        => format!("sub {}, {}", dest, source),
         | Sub(dest @ Mem(_), source @ Imm(_))
-        => format!("cmp qword {}, {}", dest, source),
+        => format!("sub qword {}, {}", dest, source),
 
         | Cmp(dest @ Reg(R8(_)), source @ Reg(R8(_)))
         | Cmp(dest @ Reg(R16(_)), source @ Reg(R16(_)))
