@@ -114,7 +114,7 @@ fn compile_let(s: &String, e: &Expr, cenv: &mut CEnv) -> AsmProg {
     asm
 }
 
-fn compile_print(e: &Expr, t: &Type, cenv: &CEnv) -> AsmProg {
+fn compile_print(e: &Expr, t: &Type, cenv: &mut CEnv) -> AsmProg {
     match t {
         Type::Int => compile_print_int(e, cenv),
         Type::Bool => compile_print_bool(e, cenv),
@@ -122,7 +122,7 @@ fn compile_print(e: &Expr, t: &Type, cenv: &CEnv) -> AsmProg {
     }
 }
 
-fn compile_print_bool(e: &Expr, cenv: &CEnv) -> AsmProg {
+fn compile_print_bool(e: &Expr, cenv: &mut CEnv) -> AsmProg {
     let mut asm = compile_expr(e, cenv);
     asm.append(&mut vec![
         push(R15),
@@ -151,7 +151,7 @@ fn compile_print_null() -> AsmProg {
     ]
 }
 
-fn compile_print_int(e: &Expr, cenv: &CEnv) -> AsmProg {
+fn compile_print_int(e: &Expr, cenv: &mut CEnv) -> AsmProg {
     let mut asm = compile_expr(e, cenv);
     asm.append(&mut vec![
             push(R15),
@@ -167,7 +167,7 @@ fn compile_print_int(e: &Expr, cenv: &CEnv) -> AsmProg {
     asm
 }
 
-fn compile_expr(expr: &Expr, cenv: &CEnv) -> AsmProg {
+fn compile_expr(expr: &Expr, cenv: &mut CEnv) -> AsmProg {
     match expr {
         Expr::Datum(d) => compile_datum(d),
         Expr::Identifier(s) => compile_ident(s, cenv),
@@ -180,14 +180,15 @@ fn compile_ident(s: &String, cenv: &CEnv) -> AsmProg {
 }
 
 
-fn compile_op2(e1: &Expr, e2: &Expr, cenv: &CEnv) -> AsmProg {
+fn compile_op2(e1: &Expr, e2: &Expr, cenv: &mut CEnv) -> AsmProg {
     let mut asm = compile_expr(e1, cenv);
     asm.push(push(RAX));
+    cenv.increment_stack(1);
     asm.append(&mut compile_expr(e2, cenv));
     asm
 }
 
-fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
+fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
     match op {
         Ops::Ternary(_, _, _) => todo!(),
         Ops::Not(_) => todo!(),
@@ -195,13 +196,11 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
             let mut asm = compile_expr(e, cenv);
             asm.push(not(RAX));
             asm
-
         },
         Ops::Neg(e) => {
             let mut asm = compile_expr(e, cenv);
             asm.push(neg(RAX));
             asm
-
         },
         Ops::Pos(e) => compile_expr(e, cenv),
         Ops::Plus(e1, e2) => {
@@ -210,6 +209,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RDI),
                 add(RAX, RDI),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::Minus(e1, e2) => {
@@ -219,6 +219,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 sub(RDI, RAX),
                 mov(RAX, RDI)
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::Mul(e1, e2) => {
@@ -227,6 +228,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RDI),
                 imul2(RAX, Some(RDI)),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::Div(_, _) => todo!(),
@@ -243,6 +245,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RDI),
                 and(RAX, RDI),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::BitOr(e1, e2) | Ops::Or(e1, e2) => {
@@ -251,6 +254,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RDI),
                 or(RAX, RDI),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::BitXor(e1, e2) => {
@@ -259,6 +263,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RDI),
                 xor(RAX, RDI),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::BitShiftLeft(e1, e2) => {
@@ -268,6 +273,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RAX),
                 shl(RAX, CL),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
         Ops::BitShiftRight(e1, e2) => {
@@ -277,6 +283,7 @@ fn compile_op(op: &Ops, cenv: &CEnv) -> AsmProg {
                 pop(RAX),
                 shr(RAX, CL),
             ]);
+            cenv.decrement_stack(1);
             asm
         },
     }
