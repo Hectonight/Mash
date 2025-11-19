@@ -9,7 +9,9 @@ endif
 default: mash
 
 objs = \
-	runtime/print_int.o
+	runtime/print_int.o \
+	runtime/print_bool.o \
+	runtime/print_null.o
 
 mash: src
 	cargo build  --color=always --package mash --bin mash --profile dev
