@@ -31,6 +31,12 @@ macro_rules! define_registers {
                 Operand::Reg(Register::from(reg))
             }
         }
+
+        impl From<$regname> for SimpleOperand {
+            fn from(reg: $regname) -> SimpleOperand {
+                SimpleOperand::Reg(Register::from(reg))
+            }
+        }
     };
 }
 
@@ -42,7 +48,7 @@ impl From<Register> for Operand {
 
 #[macro_export]
 macro_rules! reg {
-    (RAX)  => { ($crate::inter_rep::Register::R64($crate::inter_rep::R64::RAX)) };
+    (RAX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RAX) };
     (RBX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RBX) };
     (RCX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RCX) };
     (RDX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RDX) };
@@ -233,7 +239,115 @@ pub enum IRInst {
 
 
 #[derive(Debug, Clone)]
-pub struct Mem { base: Option<SimpleOperand>, index: Option<Register>, scale: u8, displacement: Imm }
+pub struct Mem {
+    pub(crate) base: Option<SimpleOperand>,
+    pub(crate) index: Option<Register>,
+    pub(crate) scale: u8,
+    pub(crate) displacement: Imm
+}
+
+#[macro_export]
+macro_rules! mem {
+
+    [$base:ident @ $index:ident * $scale:literal] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($crate::reg!($index)),
+            scale: $scale as u8,
+            displacement: $crate::inter_rep::Imm::Int(0) }
+    };
+
+    [$base:ident + $index:ident * $scale:literal] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($crate::reg!($index)),
+            scale: $scale as u8,
+            displacement: $crate::inter_rep::Imm::Int(0) }
+    };
+
+
+
+    [$base:ident @ $index:ident * $scale:literal + $disp:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($crate::reg!($index)),
+            scale: $scale as u8,
+            displacement: $crate::inter_rep::Imm::from($disp) }
+    };
+
+    [$base:ident + $index:ident * $scale:literal + $disp:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($crate::reg!($index)),
+            scale: $scale as u8,
+            displacement: $crate::inter_rep::Imm::from($disp) }
+    };
+
+    [$base:ident + $index:ident * $scale:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($crate::reg!($index)),
+            scale: u8::from($scale.into()),
+            displacement: $crate::inter_rep::Imm::Int(0) }
+    };
+
+    [$base:ident @ $index:ident * $scale:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($crate::reg!($index)),
+            scale: u8::from($scale),
+            displacement: $crate::inter_rep::Imm::Int(0) }
+    };
+
+    [None, $index:expr, $scale:expr, $disp:expr] => {
+         Mem {
+             base: None,
+             index: Some($crate::inter_rep::SimpleOperand::Reg($crate::inter_rep::Register::from($index))),
+             scale: u8::from($scale),
+             displacement: $crate::inter_rep::Imm::from($disp) }
+    };
+
+    [$base:expr, None, $disp:expr] => {
+         Mem {
+             base: Some($crate::inter_rep::SimpleOperand::from($base)),
+             index: None,
+             scale: 1,
+             displacement: $crate::inter_rep::Imm::from($disp) }
+    };
+
+    [$base:expr, $index:expr, $scale:expr, $disp:expr] => {
+         Mem {
+             base: Some($crate::inter_rep::SimpleOperand::from($base)),
+             index: Some($crate::inter_rep::Register::from($base)),
+             scale: u8::from($scale.into()),
+             displacement: $crate::inter_rep::Imm::from($disp) }
+    };
+
+    [$base:ident @ $index:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: Some($index.into()),
+            scale: 1,
+            displacement: $crate::inter_rep::Imm::Int(0) }
+    };
+
+    [$base:ident + $disp:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($base))),
+            index: None,
+            scale: 1,
+            displacement: $crate::inter_rep::Imm::from($disp) }
+    };
+
+    [$base:expr] => {
+        Mem {
+            base: Some($crate::inter_rep::SimpleOperand::from($base)),
+            index: None,
+            scale: 1,
+            displacement: $crate::inter_rep::Imm::Int(0) }
+    };
+}
+
 
 impl Display for Mem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -324,6 +438,12 @@ macro_rules! impl_int {
                 Operand::Imm(value.into())
             }
         }
+
+        impl From<$t> for SimpleOperand {
+            fn from(value: $t) -> Self {
+                SimpleOperand::Imm(value.into())
+            }
+        }
     };
 }
 
@@ -353,6 +473,12 @@ impl From<String> for Operand {
     }
 }
 
+impl From<String> for SimpleOperand {
+    fn from(value: String) -> Self {
+        SimpleOperand::Imm(Imm::from(value))
+    }
+}
+
 impl From<&str> for Imm {
     fn from(value: &str) -> Self {
         Imm::Label(String::from(value))
@@ -362,6 +488,12 @@ impl From<&str> for Imm {
 impl From<&str> for Operand {
     fn from(value: &str) -> Self {
         Operand::Imm(Imm::from(value))
+    }
+}
+
+impl From<&str> for SimpleOperand {
+    fn from(value: &str) -> Self {
+        SimpleOperand::Imm(Imm::from(value))
     }
 }
 
