@@ -1,15 +1,12 @@
-use std::collections::HashMap;
-use std::ops::Index;
-use crate::inter_rep::{AsmProg, IRInst, Label, Mem};
-use crate::inter_rep::Imm::Int;
-use crate::inter_rep::IRInst::{Mov, Push, Ret, Section};
-use crate::inter_rep::Operand::{Imm, Reg};
-use crate::inter_rep::R64::{R15, RAX, RCX, RDI, RSP};
-use crate::constructors::{add, and, call, external, global, imul, imul2, label, mov, neg, not, or, pop, push, section, shl, shr, sub, xor};
+use crate::constructors::{add, and, call, external, global, imul2, label, mov, neg, not, or, pop, push, section, shl, shr, sub, xor};
+use crate::inter_rep::IRInst::Ret;
 use crate::inter_rep::R32::{EAX, EDI};
+use crate::inter_rep::R64::{R15, RAX, RCX, RDI, RSP};
 use crate::inter_rep::R8::CL;
-use crate::{mem, reg};
-use crate::types::{Datum, Expr, TypedExpr, TypedStatement as Statement, TypedProgram as Program, Type, Ops};
+use crate::inter_rep::{AsmProg, Mem};
+use crate::types::{Datum, Expr, Ops, Type, TypedProgram as Program, TypedStatement as Statement};
+use crate::mem;
+use std::collections::HashMap;
 
 struct CEnv {
     variables: Vec<HashMap<String, usize>>,

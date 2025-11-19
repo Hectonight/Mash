@@ -100,11 +100,8 @@ AfterOps =
 | Id
 
  */
-use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
-use crate::lexer::Token;
-
 
 
 #[derive(Debug)]

@@ -1,5 +1,7 @@
+#![allow(dead_code)]
 use crate::inter_rep::{IRInst, Imm, Label, Operand, Register};
 use crate::inter_rep::IRInst::IMul;
+
 
 #[macro_export]
 macro_rules! make_op_op {

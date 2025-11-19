@@ -1,10 +1,6 @@
+use crate::types::{Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement, Value};
 use std::collections::HashMap;
 use std::ops::{Neg, Not};
-use std::ptr::hash;
-use logos::Lexer;
-use crate::lexer::Token;
-use crate::lexer::Token::Int;
-use crate::types::{CodeBlock, Datum, Expr, Ops, Program, ResultUnit, ResultValue, Statement, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement, Value};
 
 
 struct Environment {

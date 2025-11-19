@@ -1,8 +1,6 @@
 use crate::lexer::{PeekableLexer, Token};
-use crate::types::{Datum, Expr, Ops, Program, Statement, Value};
+use crate::types::{Datum, Expr, Ops, Program, Statement};
 use std::ops::Range;
-use logos::Lexer;
-use crate::lexer;
 
 type ParseResult<T> = Result<T, (String, Range<usize>)>;
 
@@ -183,7 +181,7 @@ fn parse_bitxor(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
 fn parse_bitand(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
     let mut lhs = parse_equality(lexer)?;
     while let Some(Ok(Token::Ampersand)) = lexer.peek() {
-        let token = lexer.next();
+        lexer.next();
         let rhs = parse_equality(lexer)?;
         lhs = Expr::Op(Ops::BitAnd(Box::new(lhs), Box::new(rhs)));
     }
@@ -299,7 +297,7 @@ fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
         Some(Ok(Token::Null))          => Ok(Expr::Datum(Datum::Null)),
         None => unexpected_eof(lexer),
         Some(Err(_)) => unrecognized_token(lexer),
-        Some(x) => unexpected_token(lexer),
+        Some(_) => unexpected_token(lexer),
     }
 }
 

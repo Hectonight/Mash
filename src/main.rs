@@ -1,4 +1,4 @@
-#![allow(unused_variables, dead_code, unused_imports, unused_mut)]
+#![allow(dead_code)]
 mod lexer;
 mod parser;
 mod types;
@@ -13,15 +13,12 @@ mod compile_to_ir;
 mod constructors;
 mod type_check;
 
-use interp::interp;
-use lexer::{Token, PeekableLexer};
+use lexer::{PeekableLexer, Token};
 
-use logos::Logos;
-use std::{env, fs};
-use std::path::Path;
 use crate::compile::compile;
-use crate::inter_rep::IRInst::Mov;
-use crate::inter_rep::Operand::{Imm, Reg};
+use logos::Logos;
+use std::path::Path;
+use std::{env, fs};
 
 fn main() {
     let filename = env::args().nth(1).expect("Expected file argument");

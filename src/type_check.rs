@@ -1,6 +1,5 @@
-use std::cmp::PartialEq;
+use crate::types::{CodeBlock, Datum, Expr, Ops, Program, Statement, Type, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement};
 use std::collections::HashMap;
-use crate::types::{CodeBlock, Datum, Expr, Ops, Program, Statement, Type, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement, Value};
 
 struct TEnv {
     environment: Vec<HashMap<String, Type>>,

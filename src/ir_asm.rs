@@ -1,10 +1,7 @@
-use logos::source;
-use crate::inter_rep::{AsmProg, IRInst, Operand, Register};
-use crate::inter_rep::Imm::{Int, Label as LabelO};
 use crate::inter_rep::IRInst::*;
 use crate::inter_rep::Operand::{Imm, Mem, Reg};
-use crate::inter_rep::R8::CL;
-use crate::inter_rep::Register::{R8, R16, R32, R64};
+use crate::inter_rep::Register::{R16, R32, R64, R8};
+use crate::inter_rep::{AsmProg, IRInst};
 use crate::reg;
 
 pub fn ir_to_asm(program: AsmProg) -> String {
