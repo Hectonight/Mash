@@ -25,16 +25,10 @@ fn main() {
     let src = fs::read_to_string(&filename).expect("Failed to read file");
     let lexer = Token::lexer(&src);
 
-
     let mut peeker = PeekableLexer::new(lexer);
 
     let parsed = parser::parser(&mut peeker);
     let t = type_check::typify(parsed.unwrap());
     let path = Path::new(&filename);
     compile(t.unwrap(), path).expect("Failed to compile");
-
-    //
-    // interp(parsed.expect("Err")).unwrap();
-
-
 }
