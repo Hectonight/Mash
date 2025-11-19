@@ -31,10 +31,9 @@ impl CEnv {
         self.stack_sizes.push(0);
     }
 
-    fn pop_env(&mut self) {
+    fn pop_env(&mut self) -> usize {
         self.variables.pop();
-        self.stack_sizes.pop();
-
+        self.stack_sizes.pop().unwrap() * 8
     }
 
     // Assume that the variable is defined due to type checking
@@ -86,6 +85,12 @@ pub fn compile_to_ir(program: &Program) -> AsmProg {
             .flat_map(|s| compile_statement(s, &mut cenv))
             .collect::<AsmProg>()
     );
+
+    let size = cenv.pop_env();
+    if size > 0 {
+        asm.push(add(RSP, size))
+    }
+
     asm.append(&mut vec![
         xor(RAX, RAX),
         Ret
