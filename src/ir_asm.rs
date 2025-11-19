@@ -8,11 +8,10 @@ use crate::inter_rep::Register::{R8, R16, R32, R64};
 use crate::reg;
 
 pub fn ir_to_asm(program: AsmProg) -> String {
-    let s = program.iter()
+    program.iter()
         .map(instr_to_asm)
         .collect::<Vec<String>>()
-        .join("\n");
-    s
+        .join("\n")
 }
 
 pub fn instr_to_asm(instr: &IRInst) -> String {
