@@ -188,7 +188,11 @@ fn compile_op2(e1: &Expr, e2: &Expr, cenv: &mut CEnv) -> AsmProg {
 fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
     match op {
         Ops::Ternary(_, _, _) => todo!(),
-        Ops::Not(_) => todo!(),
+        Ops::Not(e) => {
+            let mut asm = compile_expr(e, cenv);
+            asm.push(xor(RAX, 1));
+            asm
+        },
         Ops::BitNot(e) => {
             let mut asm = compile_expr(e, cenv);
             asm.push(not(RAX));
@@ -236,7 +240,9 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
         Ops::Leq(_, _) => todo!(),
         Ops::Gt(_, _) => todo!(),
         Ops::Geq(_, _) => todo!(),
-        Ops::BitAnd(e1, e2) | Ops::And(e1, e2) => {
+        Ops::And(_, _) => todo!(),
+        Ops::Or(_, _) => todo!(),
+        Ops::BitAnd(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
             asm.append(&mut vec![
                 pop(RDI),
@@ -245,7 +251,7 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
             cenv.decrement_stack(1);
             asm
         },
-        Ops::BitOr(e1, e2) | Ops::Or(e1, e2) => {
+        Ops::BitOr(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
             asm.append(&mut vec![
                 pop(RDI),
