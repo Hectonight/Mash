@@ -22,14 +22,8 @@ use std::path::Path;
 use crate::compile::compile;
 use crate::inter_rep::IRInst::Mov;
 use crate::inter_rep::Operand::{Imm, Reg};
-// use crate::inter_rep::Register::RAX;
 
 fn main() {
-    // dbg!(ir_asm::instr_to_asm(&Mov(Reg(RAX), Imm(2))));
-
-
-
-
     let filename = env::args().nth(1).expect("Expected file argument");
     let src = fs::read_to_string(&filename).expect("Failed to read file");
     let lexer = Token::lexer(&src);

@@ -1,5 +1,5 @@
 use crate::inter_rep::{IRInst, Imm, Label, Operand, Register};
-
+use crate::inter_rep::IRInst::IMul;
 
 #[macro_export]
 macro_rules! make_op_op {
@@ -40,6 +40,27 @@ macro_rules! make_label {
         }
     };
 }
+
+pub fn imul<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(op1: A, op2: Option<B>, imm: Option<C>) -> IRInst {
+    let oper1 = op1.into();
+    let oper2 = op2.map(|b| b.into());
+    let i = imm.map(|c| c.into());
+    IMul(oper1, oper2, i)
+}
+
+
+pub fn imul2<A: Into<Operand>, B: Into<Operand>>(op1: A, op2: Option<B>) -> IRInst {
+    let oper1 = op1.into();
+    let oper2 = op2.map(|b| b.into());
+    IMul(oper1, oper2, None)
+}
+
+pub fn imul1<A: Into<Operand>>(op1: A) -> IRInst {
+    let oper1 = op1.into();
+    IMul(oper1, None, None)
+}
+
+
 
 make_op_op!(mov, Mov);
 make_op_op!(add, Add);

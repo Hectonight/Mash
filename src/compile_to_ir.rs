@@ -1,9 +1,13 @@
-use crate::inter_rep::{AsmProg, IRInst};
+use std::collections::HashMap;
+use std::ops::Index;
+use crate::inter_rep::{AsmProg, IRInst, Label};
 use crate::inter_rep::Imm::Int;
 use crate::inter_rep::IRInst::{Mov, Push, Ret, Section};
 use crate::inter_rep::Operand::{Imm, Reg};
-use crate::inter_rep::R64::{R15, RAX, RDI, RSP};
-use crate::constructors::{add, and, call, external, global, label, mov, or, pop, push, section, sub, xor};
+use crate::inter_rep::R64::{R15, RAX, RCX, RDI, RSP};
+use crate::constructors::{add, and, call, external, global, imul, imul2, label, mov, neg, not, or, pop, push, section, shl, shr, sub, xor};
+use crate::inter_rep::R32::{EAX, EDI};
+use crate::inter_rep::R8::CL;
 use crate::types::{Datum, Expr, TypedExpr, TypedStatement as Statement, TypedProgram as Program, Type, Ops};
 
 
@@ -39,9 +43,38 @@ fn compile_print(te: &TypedExpr) -> AsmProg {
     let (e, t) = te;
     match t {
         Type::Int => compile_print_int(e),
-        Type::Bool => todo!(),
-        Type::Null => todo!()
+        Type::Bool => compile_print_bool(e),
+        Type::Null => compile_print_null()
     }
+}
+
+fn compile_print_bool(e: &Expr) -> AsmProg {
+    let mut asm = compile_expr(e);
+    asm.append(&mut vec![
+        push(R15),
+        mov(R15, RSP),
+        and(R15, 0b1000),
+        sub(RSP, R15),
+        external("print_bool"),
+        mov(EDI,EAX),
+        call("print_bool"),
+        add(RSP, R15),
+        pop(R15)
+    ]);
+    asm
+}
+
+fn compile_print_null() -> AsmProg {
+    vec![
+        push(R15),
+        mov(R15, RSP),
+        and(R15, 0b1000),
+        sub(RSP, R15),
+        external("print_null"),
+        call("print_null"),
+        add(RSP, R15),
+        pop(R15)
+    ]
 }
 
 fn compile_print_int(e: &Expr) -> AsmProg {
@@ -80,9 +113,19 @@ fn compile_op(op: &Ops) -> AsmProg {
     match op {
         Ops::Ternary(_, _, _) => todo!(),
         Ops::Not(_) => todo!(),
-        Ops::BitNot(_) => todo!(),
-        Ops::Neg(_) => todo!(),
-        Ops::Pos(_) => todo!(),
+        Ops::BitNot(e) => {
+            let mut asm = compile_expr(e);
+            asm.push(not(RAX));
+            asm
+
+        },
+        Ops::Neg(e) => {
+            let mut asm = compile_expr(e);
+            asm.push(neg(RAX));
+            asm
+
+        },
+        Ops::Pos(e) => compile_expr(e),
         Ops::Plus(e1, e2) => {
             let mut asm = compile_op2(e1, e2);
             asm.append(&mut vec![
@@ -100,7 +143,14 @@ fn compile_op(op: &Ops) -> AsmProg {
             ]);
             asm
         },
-        Ops::Mul(_, _) => todo!(),
+        Ops::Mul(e1, e2) => {
+            let mut asm = compile_op2(e1, e2);
+            asm.append(&mut vec![
+                pop(RDI),
+                imul2(RAX, Some(RDI)),
+            ]);
+            asm
+        },
         Ops::Div(_, _) => todo!(),
         Ops::Mod(_, _) => todo!(),
         Ops::Eq(_, _) => todo!(),
@@ -133,16 +183,32 @@ fn compile_op(op: &Ops) -> AsmProg {
             ]);
             asm
         },
-        Ops::BitShiftLeft(_, _) => todo!(),
-        Ops::BitShiftRight(_, _) => todo!(),
+        Ops::BitShiftLeft(e1, e2) => {
+            let mut asm = compile_op2(e1, e2);
+            asm.append(&mut vec![
+                mov(RCX, RAX),
+                pop(RAX),
+                shl(RAX, CL),
+            ]);
+            asm
+        },
+        Ops::BitShiftRight(e1, e2) => {
+            let mut asm = compile_op2(e1, e2);
+            asm.append(&mut vec![
+                mov(RCX, RAX),
+                pop(RAX),
+                shr(RAX, CL),
+            ]);
+            asm
+        },
     }
 }
 
 fn compile_datum(datum: &Datum) -> AsmProg {
-    vec![match datum {
-        Datum::Int(i) => mov(RAX, *i),
-        Datum::Bool(b) => mov(RAX, 1),
-        Datum::Null => todo!()
-    }]
+    match datum {
+        Datum::Int(i) => vec![mov(RAX, *i)],
+        Datum::Bool(b) => vec![mov(EAX, if *b { 1 } else { 0 })],
+        Datum::Null => vec![]
+    }
 }
 
