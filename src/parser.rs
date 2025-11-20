@@ -76,6 +76,7 @@ fn parse_if(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
     Ok(Statement::If(e,codeblock_initial,elif,None))
 }
 
+#[allow(dead_code)]
 fn parse_codeblock(lexer: &mut PeekableLexer<Token>) -> ParseResult<Vec<Statement>> {
     assert_token(lexer, Token::LCurly, "{")?;
     parse_code_block_rest(lexer)

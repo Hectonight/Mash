@@ -8,6 +8,7 @@ use crate::types::{Datum, Expr, Ops, Type, TypedProgram as Program, TypedStateme
 use crate::mem;
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 struct CEnv {
     variables: Vec<HashMap<String, usize>>,
     stack_sizes: Vec<usize>,
@@ -23,6 +24,8 @@ impl CEnv {
             label_count: 0
         }
     }
+
+    #[allow(dead_code)]
     fn new_env(&mut self) {
         self.variables.push(HashMap::new());
         self.stack_sizes.push(0);

@@ -4,7 +4,6 @@ mod parser;
 mod types;
 mod interp;
 mod compile;
-mod folding;
 mod inter_rep;
 mod ir_asm;
 mod compile_to_ir;
