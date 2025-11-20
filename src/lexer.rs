@@ -33,7 +33,7 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 pub enum Token {
 
-    #[regex(r"[+-]?\d+", |lex| lex.slice().parse::<i64>().unwrap())]
+    #[regex(r"\d+", |lex| lex.slice().parse::<i64>().unwrap())]
     Int(i64),
 
     // Char(char),
