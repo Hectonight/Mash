@@ -51,10 +51,17 @@ pub fn imul<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(op1: A, op2: Optio
 }
 
 
-pub fn imul2<A: Into<Operand>, B: Into<Operand>>(op1: A, op2: Option<B>) -> IRInst {
+pub fn imul3<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(op1: A, op2: B, imm: C) -> IRInst {
     let oper1 = op1.into();
-    let oper2 = op2.map(|b| b.into());
-    IMul(oper1, oper2, None)
+    let oper2 = op2.into();
+    let i = imm.into();
+    IMul(oper1, Some(oper2), Some(i))
+}
+
+pub fn imul2<A: Into<Operand>, B: Into<Operand>>(op1: A, op2: B) -> IRInst {
+    let oper1 = op1.into();
+    let oper2 = op2.into();
+    IMul(oper1, Some(oper2), None)
 }
 
 pub fn imul1<A: Into<Operand>>(op1: A) -> IRInst {

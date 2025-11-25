@@ -1,11 +1,12 @@
-use crate::constructors::{add, and, call, external, global, imul2, label, mov, neg, not, or, pop, push, section, shl, shr, sub, xor};
+use crate::constructors::{add, and, call, cmove, cmp, external, global, imul2, je, jmp, label, mov, neg, not, or, pop, push, section, shl, shr, sub, test, xor};
 use crate::inter_rep::IRInst::Ret;
+use crate::inter_rep::Label;
 use crate::inter_rep::R32::{EAX, EDI};
-use crate::inter_rep::R64::{R15, RAX, RCX, RDI, RSP};
+use crate::inter_rep::R64::{R15, R8, RAX, RCX, RDI, RSP};
 use crate::inter_rep::R8::CL;
 use crate::inter_rep::{AsmProg, Mem};
-use crate::types::{Datum, Expr, Ops, Type, TypedProgram as Program, TypedStatement as Statement};
 use crate::mem;
+use crate::types::{Datum, Expr, Ops, Type, TypedCodeBlock as CodeBlock, TypedProgram as Program, TypedStatement as Statement};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -69,6 +70,14 @@ impl CEnv {
         }
     }
 
+    #[allow(dead_code)]
+    fn genlabel(&mut self, name: &str) -> Label {
+        let s = format!("{}_{}", name, self.label_count);
+        self.label_count += 1;
+
+        s
+    }
+
 }
 
 
@@ -101,10 +110,54 @@ pub fn compile_to_ir(program: &Program) -> AsmProg {
 fn compile_statement(statement: &Statement, cenv: &mut CEnv) -> AsmProg {
     match statement {
         Statement::Expr((e, _)) => compile_expr(e, cenv),
-        Statement::If(_, _, _, _) => todo!(),
+        Statement::If((e, _), then, elifs, el)
+        => compile_if(e, then, elifs.iter().map(|((ex, _), cb)| (ex,cb)).collect(), el, cenv),
         Statement::Print((e, t)) => compile_print(e, t, cenv),
         Statement::Let(s, (e, _)) => compile_let(s, e, cenv),
     }
+}
+
+fn compile_if(expr: &Expr, then: &CodeBlock, elifs: Vec<(&Expr, &CodeBlock)>, el: &Option<CodeBlock>, cenv: &mut CEnv) -> AsmProg {
+    let mut asm = compile_expr(&expr, cenv);
+    let done = cenv.genlabel("done");
+    let skip_main = cenv.genlabel("skip");
+
+    asm.append(&mut vec![
+        test(RAX, RAX),
+        je(skip_main.clone()),
+    ]);
+    asm.append(&mut compile_codeblock(then, cenv));
+    asm.append(&mut vec![
+        jmp(done.clone()),
+        label(skip_main)
+    ]);
+
+    for (e, cb) in elifs {
+        asm.append(&mut compile_expr(&e, cenv));
+        let skip = cenv.genlabel("skip");
+        asm.append(&mut vec![
+            test(RAX, RAX),
+            je(skip.clone()),
+        ]);
+        asm.append(&mut compile_codeblock(cb, cenv));
+        asm.append(&mut vec![
+            jmp(done.clone()),
+            label(skip)
+        ]);
+    }
+
+    if let Some(els) = el {
+        asm.append(&mut compile_codeblock(els, cenv));
+    }
+    asm.push(label(done));
+    asm
+}
+
+fn compile_codeblock(block: &CodeBlock, cenv: &mut CEnv) -> AsmProg {
+    cenv.new_env();
+    let mut asm = block.iter().flat_map(|s| compile_statement(s, cenv)).collect::<AsmProg>();
+    asm.push(add(RSP,cenv.pop_env()));
+    asm
 }
 
 fn compile_let(s: &String, e: &Expr, cenv: &mut CEnv) -> AsmProg {
@@ -230,14 +283,26 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
             let mut asm = compile_op2(e1, e2, cenv);
             asm.append(&mut vec![
                 pop(RDI),
-                imul2(RAX, Some(RDI)),
+                imul2(RAX, RDI),
             ]);
             cenv.decrement_stack(1);
             asm
         },
         Ops::Div(_, _) => todo!(),
         Ops::Mod(_, _) => todo!(),
-        Ops::Eq(_, _) => todo!(),
+        Ops::Eq(e1, e2) => {
+            let mut asm = compile_op2(e1, e2, cenv);
+            asm.append(&mut vec![
+                pop(RDI),
+                mov(RCX, RAX),
+                xor(RAX, RAX),
+                mov(R8, 1),
+                cmp(RCX, RDI),
+                cmove(RAX, R8)
+            ]);
+            cenv.decrement_stack(1);
+            asm
+        },
         Ops::Neq(_, _) => todo!(),
         Ops::Lt(_, _) => todo!(),
         Ops::Leq(_, _) => todo!(),
