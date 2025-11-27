@@ -295,6 +295,7 @@ fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
         Some(Ok(Token::Identifier(x))) => Ok(Expr::Identifier(x)),
         Some(Ok(Token::Int(x)))        => Ok(Expr::Datum(Datum::Int(x))),
         Some(Ok(Token::Bool(x)))       => Ok(Expr::Datum(Datum::Bool(x))),
+        Some(Ok(Token::Char(x)))       => Ok(Expr::Datum(Datum::Char(x))),
         Some(Ok(Token::Null))          => Ok(Expr::Datum(Datum::Null)),
         None => unexpected_eof(lexer),
         Some(Err(_)) => unrecognized_token(lexer),

@@ -40,6 +40,7 @@ Expr =
 
 Ternary =
 | Ternary ? Ternary : Ternary
+| Or
 
 Or =
 | Or || Or
@@ -124,6 +125,7 @@ pub enum TypedStatement {
 pub enum Type {
     Int,
     Bool,
+    Char,
     Null,
 }
 
@@ -132,7 +134,8 @@ impl Display for Type {
         write!(f, "{}", match self {
             Type::Int => "int",
             Type::Bool => "bool",
-            Type::Null => "null"
+            Type::Null => "null",
+            Type::Char => "char"
         })
     }
 }
@@ -184,6 +187,7 @@ pub enum Ops {
 pub enum Datum {
     Int(i64),
     Bool(bool),
+    Char(char),
     Null
 }
 
@@ -192,8 +196,8 @@ pub enum Datum {
 pub enum Value {
     Int(i64),
     Bool(bool),
+    Char(char),
     Null,
-    Void
 }
 
 pub(crate) type ResultValue = Result<Value, String>;

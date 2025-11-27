@@ -16,7 +16,8 @@ default: mash
 objs = \
 	runtime/print_int.o \
 	runtime/print_bool.o \
-	runtime/print_null.o
+	runtime/print_null.o \
+	runtime/print_char.o
 
 mash: src runtime/runtime.o
 	cargo build  --color=always --package mash --bin mash --profile dev

@@ -101,6 +101,7 @@ fn datum_type(datum: &Datum) -> Type {
     match datum {
         Datum::Int(_) => Type::Int,
         Datum::Bool(_) => Type::Bool,
+        Datum::Char(_) => Type::Char,
         Datum::Null => Type::Null,
     }
 }

@@ -27,16 +27,32 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
 }
 
 
-
-
 #[derive(Logos, Debug, PartialEq, Eq, Clone)]
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 pub enum Token {
 
     #[regex(r"\d+", |lex| lex.slice().parse::<i64>().unwrap())]
+    #[regex(r"0[xX][\da-fA-F]+", |lex| i64::from_str_radix(&lex.slice()[2..], 16).unwrap())]
+    #[regex(r"0[bB][01]+", |lex| i64::from_str_radix(&lex.slice()[2..], 2).unwrap())]
+    #[regex(r"0[oO][0-7]+", |lex| i64::from_str_radix(&lex.slice()[2..], 8).unwrap())]
     Int(i64),
 
+    // #[regex(r"'([^'\\\x00\t\xa0\xd0]|\\x[0-7][\da-fA-F]|\\[\\nrt0]|\\u\{[\da-fA-F]{1,6}\})'", |lex|
+    // {
+    // dbg!(&lex.slice());
+    // lex.slice()[1..lex.span().end - lex.span().start - 1].parse::<char>().unwrap()
+    // }
+    // )]
     // Char(char),
+
+    #[regex(r"'[^'\\\x00\t\xa0\xd0]'", |lex| lex.slice()[1..2].parse::<char>().unwrap())]
+    #[token("'\\n'", |_| '\n')]
+    #[token("'\\0'", |_| '\0')]
+    #[token("'\\t'", |_| '\t')]
+    #[token("'\\\\'", |_| '\\')]
+    #[token("'\\r'", |_| '\r')]
+    // #[regex(r"'\\u\{[\da-fA-F]{1,6}\}'", |lex| char::from_u32(lex.slice()[3..lex.span().end - lex.span().start - 2].parse::<u32>().unwrap()))]
+    Char(char),
     // String(String),
 
     #[token("print")]

@@ -99,8 +99,8 @@ fn printer(value: &Value) {
     match value {
         Value::Int(x) => println!("{}", x),
         Value::Bool(x) => println!("{}", x),
+        Value::Char(x) => println!("{}", x),
         Value::Null => println!("null"),
-        Value::Void => ()
     }
 }
 
@@ -156,7 +156,8 @@ fn interp_datum(dat: &Datum) -> Value {
     match dat {
         Datum::Int(x) => Value::Int(*x),
         Datum::Bool(x) => Value::Bool(*x),
-        Datum::Null => Value::Null
+        Datum::Char(x) => Value::Char(*x),
+        Datum::Null => Value::Null,
     }
 }
 

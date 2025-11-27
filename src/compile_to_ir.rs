@@ -171,8 +171,27 @@ fn compile_print(e: &Expr, t: &Type, cenv: &mut CEnv) -> AsmProg {
     match t {
         Type::Int => compile_print_int(e, cenv),
         Type::Bool => compile_print_bool(e, cenv),
-        Type::Null => compile_print_null()
+        Type::Null => compile_print_null(),
+        Type::Char => compile_print_char(e, cenv)
     }
+}
+
+fn compile_print_char(e: &Expr, cenv: &mut CEnv) -> AsmProg {
+    let mut asm = compile_expr(e, cenv);
+    asm.append(&mut vec![
+        push(RAX),
+        mov(RDI,RSP),
+        push(R15),
+        mov(R15, RSP),
+        and(R15, 0b1000),
+        sub(RSP, R15),
+        external("print_char"),
+        call("print_char"),
+        add(RSP, R15),
+        pop(R15),
+        add(RSP, 8)
+    ]);
+    asm
 }
 
 fn compile_print_bool(e: &Expr, cenv: &mut CEnv) -> AsmProg {
@@ -364,7 +383,8 @@ fn compile_datum(datum: &Datum) -> AsmProg {
     match datum {
         Datum::Int(i) => vec![mov(RAX, *i)],
         Datum::Bool(b) => vec![mov(EAX, if *b { 1 } else { 0 })],
-        Datum::Null => vec![]
+        Datum::Char(c) => vec!(mov(RAX, *c as i128)),
+        Datum::Null => vec![],
     }
 }
 
