@@ -1,15 +1,21 @@
 use crate::types::{Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement, Value};
 use std::collections::HashMap;
+use std::io::{stderr, stdout, Write};
 use std::ops::{Neg, Not};
 
-
-struct Environment {
+#[allow(dead_code)]
+struct Environment<'a, W1: Write, W2: Write> {
     environment: Vec<HashMap<String, Value>>,
+    out: &'a mut W1,
+    err: &'a mut W2,
 }
 
-impl Environment {
-    fn new() -> Self {
-        Self { environment: vec![] }
+impl<'a, W1: Write, W2: Write> Environment<'a, W1, W2> {
+    fn new(out: &'a mut W1, err: &'a mut W2) -> Self {
+        Self {
+            environment: vec![],
+            out, err
+        }
     }
 
     fn new_environment(&mut self) {
@@ -44,13 +50,18 @@ impl Environment {
     }
 }
 
-pub fn interp(program: TypedProgram) -> Result<i64, String> {
-    let mut interpreter = Environment::new();
+
+pub fn interp(program: TypedProgram) -> Result<i32, String> {
+    interp_test(program, &mut stdout(), &mut stderr())
+}
+
+pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(program: TypedProgram, out: &'a mut W1, err: &'a mut W2) -> Result<i32, String> {
+    let mut interpreter = Environment::new(out, err);
     interp_codeblock(program, &mut interpreter)?;
     Ok(0)
 }
 
-fn interp_codeblock(codeblock: TypedCodeBlock, env: &mut Environment) -> ResultUnit {
+fn interp_codeblock<W1: Write, W2: Write>(codeblock: TypedCodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
     env.new_environment();
     for statement in codeblock {
         interp_statement(statement, env)?;
@@ -59,13 +70,12 @@ fn interp_codeblock(codeblock: TypedCodeBlock, env: &mut Environment) -> ResultU
     Ok(())
 }
 
-fn interp_statement(statement: TypedStatement, env: &mut Environment) -> ResultUnit {
+fn interp_statement<W1: Write, W2: Write>(statement: TypedStatement, env: &mut Environment<W1, W2>) -> ResultUnit {
     match statement {
         TypedStatement::Expr((e, _)) => { interp_expr(e, env)?; Ok(()) },
         TypedStatement::Print((e, _)) => {
             let x = interp_expr(e, env)?;
-            printer(&x);
-            Ok(())
+            printer(&x, env)
         }
         TypedStatement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
         TypedStatement::Let(s, (e, _)) => interp_let(s, e, env),
@@ -73,21 +83,21 @@ fn interp_statement(statement: TypedStatement, env: &mut Environment) -> ResultU
     }
 }
 
-fn interp_assignment(s: String, expr: Expr, env: &mut Environment) -> ResultUnit {
+fn interp_assignment<W1: Write, W2: Write>(s: String, expr: Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
     let x = interp_expr(expr, env)?;
     env.update(s, x);
     Ok(())
 }
 
-fn interp_let(s: String, expr: Expr, env: &mut Environment) -> ResultUnit {
+fn interp_let<W1: Write, W2: Write>(s: String, expr: Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
     let v = interp_expr(expr, env)?;
     env.insert(s, v);
     Ok(())
 }
 
 
-fn interp_if(typed_expr: TypedExpr, codeblock: TypedCodeBlock, elifs: Vec<(TypedExpr,TypedCodeBlock)>,
-             else_block: Option<TypedCodeBlock>, env: &mut Environment) -> ResultUnit {
+fn interp_if<W1: Write, W2: Write>(typed_expr: TypedExpr, codeblock: TypedCodeBlock, elifs: Vec<(TypedExpr,TypedCodeBlock)>,
+             else_block: Option<TypedCodeBlock>, env: &mut Environment<W1, W2>) -> ResultUnit {
     let (expr, _) = typed_expr;
     match interp_expr(expr, env)? {
         Value::Bool(true) => interp_codeblock(codeblock, env),
@@ -111,17 +121,18 @@ fn interp_if(typed_expr: TypedExpr, codeblock: TypedCodeBlock, elifs: Vec<(Typed
     }
 }
 
-fn printer(value: &Value) {
+
+fn printer<W1: Write, W2: Write>(value: &Value, env: &mut Environment<W1, W2>) -> ResultUnit {
     match value {
-        Value::Int(x) => println!("{}", x),
-        Value::Bool(x) => println!("{}", x),
-        Value::Char(x) => println!("{}", x),
-        Value::Null => println!("null"),
+        Value::Int(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),
+        Value::Bool(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),
+        Value::Char(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),
+        Value::Null => writeln!(env.out, "null").map_err(|e| e.to_string()),
     }
 }
 
 
-fn interp_expr(expr: Expr, env: &Environment) -> ResultValue {
+fn interp_expr<W1: Write, W2: Write>(expr: Expr, env: &Environment<W1, W2>) -> ResultValue {
     match expr {
         Expr::Datum(x) => Ok(interp_datum(&x)),
         Expr::Identifier(s) => {
@@ -135,7 +146,7 @@ fn interp_expr(expr: Expr, env: &Environment) -> ResultValue {
     }
 }
 
-fn interp_ops(op: Ops, env: &Environment) -> ResultValue {
+fn interp_ops<W1: Write, W2: Write>(op: Ops, env: &Environment<W1, W2>) -> ResultValue {
     match op {
         Ops::Ternary(a, b, c) => {
             match interp_expr(*a, env)? {

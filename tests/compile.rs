@@ -61,3 +61,12 @@ fn let_prog() {
 }
 
 
+#[test]
+fn assignments() {
+    let stdout_compare = get_stdout_compare("assignments");
+    stdout_compare("let a = 4; a -= 3; print a;", "1\n");
+    stdout_compare("let a = 4; a = 2; print a;", "2\n");
+    stdout_compare("let a = 4; a += 1; print a;", "5\n");
+    stdout_compare("let a = 4; a *= 5; print a;", "20\n");
+}
+
