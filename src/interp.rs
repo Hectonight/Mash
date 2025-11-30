@@ -29,6 +29,15 @@ impl Environment {
         None
     }
 
+    fn update(&mut self, key: String, val: Value) {
+        for env in self.environment.iter_mut().rev() {
+            if env.contains_key(&key) {
+                env.insert(key, val);
+                return;
+            }
+        }
+    }
+
     fn insert(&mut self, s: String, v: Value) {
         let l = self.environment.len();
         self.environment[l - 1].insert(s, v);
@@ -60,7 +69,14 @@ fn interp_statement(statement: TypedStatement, env: &mut Environment) -> ResultU
         }
         TypedStatement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
         TypedStatement::Let(s, (e, _)) => interp_let(s, e, env),
+        TypedStatement::Assignment(s, (e, _))  => interp_assignment(s, e, env)
     }
+}
+
+fn interp_assignment(s: String, expr: Expr, env: &mut Environment) -> ResultUnit {
+    let x = interp_expr(expr, env)?;
+    env.update(s, x);
+    Ok(())
 }
 
 fn interp_let(s: String, expr: Expr, env: &mut Environment) -> ResultUnit {

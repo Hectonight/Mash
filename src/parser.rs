@@ -1,6 +1,7 @@
 use crate::lexer::{PeekableLexer, Token};
 use crate::types::{Datum, Expr, Ops, Program, Statement};
 use std::ops::Range;
+use crate::types::Statement::Assignment;
 
 type ParseResult<T> = Result<T, (String, Range<usize>)>;
 
@@ -12,8 +13,8 @@ fn unrecognized_token<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
 fn unexpected_eof<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
     Err(("Unexpected end of input".to_owned(), lexer.span()))
 }
-fn unexpected_token<T>(lexer: &mut PeekableLexer<Token>) -> ParseResult<T> {
-    Err(("Unexpected token".to_owned(), lexer.span()))
+fn unexpected_token<T>(lexer: &mut PeekableLexer<Token>, token: Token) -> ParseResult<T> {
+    Err((format!("Unexpected token {:?}", token), lexer.span()))
 }
 
 
@@ -34,14 +35,49 @@ fn parse_statement_option(lexer: &mut PeekableLexer<Token>) -> Option<ParseResul
 }
 
 fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
-    match lexer.peek() {
-        Some(Err(_)) => unrecognized_token(lexer),
-        Some(Ok(Token::Print)) => { lexer.next(); parse_print(lexer) },
-        Some(Ok(Token::If)) => { lexer.next(); parse_if(lexer) }
-        Some(Ok(Token::Let)) => {lexer.next(); parse_let(lexer) }
-        None => unrecognized_token(lexer),
+    match (lexer.peek(), lexer.peek2()) {
+        | (Some(Err(_)), _) => unrecognized_token(lexer),
+        | (Some(Ok(Token::Print)), _) => { lexer.next(); parse_print(lexer) },
+        | (Some(Ok(Token::If)), _) => { lexer.next(); parse_if(lexer) }
+        | (Some(Ok(Token::Let)), _) => {lexer.next(); parse_let(lexer) }
+
+        | (Some(Ok(Token::Identifier(_))),
+            Some(Ok(Token::Equal
+                     | Token::PlusEqual
+                     | Token::MinusEqual
+                     | Token::AmpersandEqual
+                     | Token::StarEqual
+                     | Token::SlashEqual
+                     | Token::PercentEqual
+                     | Token::ShiftLeftEqual
+                     | Token::ShiftRightEqual
+                     | Token::VBarEqual
+                     | Token::CarrotEqual
+                 ))) => {
+            parse_assignment(lexer)
+        },
+        (None, _) => unexpected_eof(lexer),
         _ => parse_statement_expr(lexer)
     }
+}
+
+fn parse_assignment(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
+    let assignment = match (lexer.next(), lexer.next()) {
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::Equal))) => Ok(Assignment(s, parse_expr(lexer)?)),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::PlusEqual)))       => Ok(Assignment(s.clone(), Expr::Op(Ops::Plus( Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::MinusEqual)))      => Ok(Assignment(s.clone(), Expr::Op(Ops::Minus(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::StarEqual)))       => Ok(Assignment(s.clone(), Expr::Op(Ops::Mul(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::SlashEqual)))      => Ok(Assignment(s.clone(), Expr::Op(Ops::Div(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::PercentEqual)))    => Ok(Assignment(s.clone(), Expr::Op(Ops::Mod(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::AmpersandEqual)))  => Ok(Assignment(s.clone(), Expr::Op(Ops::BitAnd(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::VBarEqual)))       => Ok(Assignment(s.clone(), Expr::Op(Ops::BitOr(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::CarrotEqual)))     => Ok(Assignment(s.clone(), Expr::Op(Ops::BitXor(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::ShiftLeftEqual)))  => Ok(Assignment(s.clone(), Expr::Op(Ops::BitShiftLeft(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        (Some(Ok(Token::Identifier(s))), Some(Ok(Token::ShiftRightEqual))) => Ok(Assignment(s.clone(), Expr::Op(Ops::BitShiftRight(Box::new(Expr::Identifier(s)), Box::new(parse_expr(lexer)?))))),
+        _ => unreachable!()
+    };
+    assert_token(lexer, Token::Semicolon, ";")?;
+    assignment
 }
 
 fn parse_let(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
@@ -54,7 +90,7 @@ fn parse_let(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
         }
         None => unexpected_eof(lexer),
         Some(Err(_)) => unrecognized_token(lexer),
-        _ => unexpected_token(lexer),
+        Some(Ok(t)) => unexpected_token(lexer, t),
     }
 }
 
@@ -69,7 +105,7 @@ fn parse_if(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
             Some(Ok(Token::LCurly)) => return Ok(Statement::If(e,codeblock_initial,elif,Some(parse_code_block_rest(lexer)?))),
             None => return unexpected_eof(lexer),
             Some(Err(_)) => return unrecognized_token(lexer),
-            Some(_) => return unexpected_token(lexer),
+            Some(Ok(t)) => return unexpected_token(lexer, t),
         }
     }
     optional_token(lexer, Token::Semicolon);
@@ -299,7 +335,7 @@ fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
         Some(Ok(Token::Null))          => Ok(Expr::Datum(Datum::Null)),
         None => unexpected_eof(lexer),
         Some(Err(_)) => unrecognized_token(lexer),
-        Some(_) => unexpected_token(lexer),
+        Some(Ok(t)) => unexpected_token(lexer, t),
     }
 }
 

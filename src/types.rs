@@ -110,7 +110,8 @@ pub enum Statement {
     Expr(Expr),
     If(Expr, CodeBlock, Vec<(Expr, CodeBlock)>, Option<CodeBlock>),
     Print(Expr),
-    Let(String, Expr)
+    Let(String, Expr),
+    Assignment(String, Expr),
 }
 
 #[derive(Debug)]
@@ -118,7 +119,8 @@ pub enum TypedStatement {
     Expr(TypedExpr),
     If(TypedExpr, TypedCodeBlock, Vec<(TypedExpr, TypedCodeBlock)>, Option<TypedCodeBlock>),
     Print(TypedExpr),
-    Let(String, TypedExpr)
+    Let(String, TypedExpr),
+    Assignment(String, TypedExpr),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

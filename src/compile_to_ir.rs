@@ -114,8 +114,16 @@ fn compile_statement(statement: &Statement, cenv: &mut CEnv) -> AsmProg {
         => compile_if(e, then, elifs.iter().map(|((ex, _), cb)| (ex,cb)).collect(), el, cenv),
         Statement::Print((e, t)) => compile_print(e, t, cenv),
         Statement::Let(s, (e, _)) => compile_let(s, e, cenv),
+        Statement::Assignment(s, (e, _)) => compile_assignment(s, e, cenv),
     }
 }
+
+fn compile_assignment(ident: &String, expr: &Expr, cenv: &mut CEnv) -> AsmProg {
+    let mut asm = compile_expr(expr, cenv);
+    asm.push(mov(mem![RSP + cenv.locate(ident)], RAX));
+    asm
+}
+
 
 fn compile_if(expr: &Expr, then: &CodeBlock, elifs: Vec<(&Expr, &CodeBlock)>, el: &Option<CodeBlock>, cenv: &mut CEnv) -> AsmProg {
     let mut asm = compile_expr(&expr, cenv);

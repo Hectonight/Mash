@@ -3,18 +3,21 @@ use logos::{Lexer, Logos, Span};
 
 pub struct PeekableLexer<'a, T: Logos<'a>> {
     lexer: Lexer<'a, T>,
-    peeker: Option<Result<T, T::Error>>
+    peeker1: Option<Result<T, T::Error>>,
+    peeker2: Option<Result<T, T::Error>>
 }
 
 impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
     pub fn new(mut lexer: Lexer<'a, T>) -> Self {
-        let peeker = lexer.next();
-        Self { lexer, peeker }
+        let peeker1 = lexer.next();
+        let peeker2 = lexer.next();
+        Self { lexer, peeker1, peeker2 }
     }
 
     pub fn next(&mut self) -> Option<Result<T, T::Error>> {
-        let peeked = self.peeker.take();
-        self.peeker = self.lexer.next();
+        let peeked = self.peeker1.take();
+        self.peeker1 = self.peeker2.take();
+        self.peeker2 = self.lexer.next();
         peeked
     }
     pub fn span(&self) -> Span {
@@ -22,8 +25,14 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
     }
 
     pub fn peek(&self) -> &Option<Result<T, T::Error>> {
-        &self.peeker
+        &self.peeker1
     }
+
+    pub fn peek2(&self) -> &Option<Result<T, T::Error>> {
+        &self.peeker2
+    }
+    
+    
 }
 
 

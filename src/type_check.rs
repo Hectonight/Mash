@@ -70,13 +70,22 @@ fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatem
             },
         Statement::Print(e) => Ok(TypedStatement::Print(typify_expr(e, tenv)?)),
         Statement::Let(id, e) => {
-            let (t, ex) = typify_expr(e, tenv)?;
+            let (ex, t) = typify_expr(e, tenv)?;
             if tenv.member(&id) {
                 return Err(format!("{} defined multiple times", id))
             }
-            tenv.insert(id.clone(), ex);
-            Ok(TypedStatement::Let(id.clone(), (t, ex)))
+            tenv.insert(id.clone(), t);
+            Ok(TypedStatement::Let(id.clone(), (ex, t)))
             }
+        Statement::Assignment(id, e) => {
+            let (ex, tright) = typify_expr(e, tenv)?;
+            let tleft = tenv.lookup(&id).ok_or(format!("{} is not defined", id))?;
+            if *tleft != tright {
+                Err(format!("Assignment type mismatch {} and {}", *tleft, tright))
+            } else {
+                Ok(TypedStatement::Assignment(id, (ex, tright)))
+            }
+        }
         }
     }
 
