@@ -199,6 +199,12 @@ pub fn instr_to_asm(instr: &IRInst) -> String {
         | Lea(dest @ R64(_), source @ Mem(_))
         => format!("lea {}, {}", dest, source),
 
+        | Cbw => String::from("cbw"),
+        | Cwd => String::from("cwd"),
+        | Cdq => String::from("cdq"),
+        | Cqo => String::from("cqo"),
+
+
         | Jmp(dest @ Imm(_))
         | Jmp(dest @ Mem(_))
         | Jmp(dest @ Reg(R16(_)))

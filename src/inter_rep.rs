@@ -235,7 +235,12 @@ pub enum IRInst {
     CMovpo(Register, Operand),
     CMovpe(Register, Operand),
     CMovns(Register, Operand),
-    CMovnz(Register, Operand)
+    CMovnz(Register, Operand),
+
+    Cbw,
+    Cwd,
+    Cdq,
+    Cqo
 }
 
 
