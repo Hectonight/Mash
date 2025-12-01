@@ -56,10 +56,18 @@ fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
                  ))) => {
             parse_assignment(lexer)
         },
+        | (Some(Ok(Token::While)), _) => {lexer.next(); parse_while(lexer) }
         (None, _) => unexpected_eof(lexer),
         _ => parse_statement_expr(lexer)
     }
 }
+
+fn parse_while(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
+    let e = parse_expr(lexer)?;
+    let cb = parse_codeblock(lexer)?;
+    Ok(Statement::While(e,cb))
+}
+
 
 fn parse_assignment(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
     let assignment = match (lexer.next(), lexer.next()) {
@@ -112,7 +120,6 @@ fn parse_if(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
     Ok(Statement::If(e,codeblock_initial,elif,None))
 }
 
-#[allow(dead_code)]
 fn parse_codeblock(lexer: &mut PeekableLexer<Token>) -> ParseResult<Vec<Statement>> {
     assert_token(lexer, Token::LCurly, "{")?;
     parse_code_block_rest(lexer)
@@ -185,7 +192,7 @@ fn parse_or(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
 
 fn parse_and(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
     let mut lhs = parse_bitor(lexer)?;
-    while let Some(Ok(Token::Ampersand)) = lexer.peek() {
+    while let Some(Ok(Token::And)) = lexer.peek() {
         lexer.next();
         let rhs = parse_bitor(lexer)?;
         lhs = Expr::Op(Ops::And(Box::new(lhs), Box::new(rhs)));
@@ -303,19 +310,19 @@ fn parse_prefix(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
     match lexer.peek() {
         Some(Ok(Token::ExclamationPoint)) => {
             lexer.next();
-            Ok(Expr::Op(Ops::Not(Box::new(after_ops(lexer)?))))
+            Ok(Expr::Op(Ops::Not(Box::new(parse_prefix(lexer)?))))
         }
         Some(Ok(Token::Tilde)) => {
             lexer.next();
-            Ok(Expr::Op(Ops::BitNot(Box::new(after_ops(lexer)?))))
+            Ok(Expr::Op(Ops::BitNot(Box::new(parse_prefix(lexer)?))))
         }
         Some(Ok(Token::Plus)) => {
             lexer.next();
-            Ok(Expr::Op(Ops::Pos(Box::new(after_ops(lexer)?))))
+            Ok(Expr::Op(Ops::Pos(Box::new(parse_prefix(lexer)?))))
         }
         Some(Ok(Token::Minus)) => {
             lexer.next();
-            Ok(Expr::Op(Ops::Neg(Box::new(after_ops(lexer)?))))
+            Ok(Expr::Op(Ops::Neg(Box::new(parse_prefix(lexer)?))))
         }
         _ => Ok(after_ops(lexer)?),
     }

@@ -86,6 +86,14 @@ fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatem
                 Ok(TypedStatement::Assignment(id, (ex, tright)))
             }
         }
+        Statement::While(e, cb) => {
+            let (ex, t) = typify_expr(e, tenv)?;
+            if t != Type::Bool {
+                Err(format!("While type mismatch, found {} expected bool", t))
+            } else {
+                Ok(TypedStatement::While((ex, Type::Bool), typify_codeblock(cb, tenv)?))
+            }
+        }
         }
     }
 
@@ -174,27 +182,32 @@ fn op_type(ops: &Ops, tenv: &TEnv) -> Result<Type, String> {
         Ops::Lt(a, b) => {
             let s = "less than".to_string();
             assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            assert_expr_type(b, Type::Int, s, tenv)?;
+            Ok(Type::Bool)
         },
         Ops::Leq(a, b) => {
             let s = "less than or equal to".to_string();
             assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            assert_expr_type(b, Type::Int, s, tenv)?;
+            Ok(Type::Bool)
         },
         Ops::Gt(a, b) => {
             let s = "greater than".to_string();
             assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            assert_expr_type(b, Type::Int, s, tenv)?;
+            Ok(Type::Bool)
         },
         Ops::Geq(a, b) => {
             let s = "greater than or equal to".to_string();
             assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            assert_expr_type(b, Type::Int, s, tenv)?;
+            Ok(Type::Bool)
         },
         Ops::And(a, b) => {
             let s = "and".to_string();
             assert_expr_type(a, Type::Bool, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Bool, s, tenv)?)
+            assert_expr_type(b, Type::Bool, s, tenv)?;
+            Ok(Type::Bool)
         },
         Ops::Or(a, b) => {
             let s = "or".to_string();

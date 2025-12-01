@@ -115,8 +115,25 @@ fn compile_statement(statement: &Statement, cenv: &mut CEnv) -> AsmProg {
         Statement::Print((e, t)) => compile_print(e, t, cenv),
         Statement::Let(s, (e, _)) => compile_let(s, e, cenv),
         Statement::Assignment(s, (e, _)) => compile_assignment(s, e, cenv),
+        Statement::While((e, _), cb) => compile_while(e, cb, cenv)
     }
 }
+
+fn compile_while(e: &Expr, code_block: &CodeBlock, cenv: &mut CEnv) -> AsmProg {
+    let while_label = cenv.genlabel("while");
+    let done = cenv.genlabel("done");
+    let mut asm = vec![label(while_label.clone())];
+    asm.append(&mut compile_expr(e, cenv));
+    asm.append(&mut vec![
+        test(RAX, RAX),
+        je(done.clone())
+    ]);
+    asm.append(&mut compile_codeblock(code_block, cenv));
+    asm.push(jmp(while_label));
+    asm.push(label(done));
+    asm
+}
+
 
 fn compile_assignment(ident: &String, expr: &Expr, cenv: &mut CEnv) -> AsmProg {
     let mut asm = compile_expr(expr, cenv);
@@ -400,7 +417,7 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
             let mut asm = compile_expr(e1, cenv);
             asm.append(&mut vec![
                 test(RAX, RAX),
-                je(done)
+                je(done.clone())
             ]);
             asm.append(&mut compile_expr(e2, cenv));
             asm.push(label(done));
@@ -411,7 +428,7 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
             let mut asm = compile_expr(e1, cenv);
             asm.append(&mut vec![
                 test(RAX, RAX),
-                jne(done)
+                jne(done.clone())
             ]);
             asm.append(&mut compile_expr(e2, cenv));
             asm.push(label(done));

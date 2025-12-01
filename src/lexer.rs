@@ -1,27 +1,34 @@
+use std::mem::replace;
 use logos::{Lexer, Logos, Span};
 
 
 pub struct PeekableLexer<'a, T: Logos<'a>> {
     lexer: Lexer<'a, T>,
     peeker1: Option<Result<T, T::Error>>,
-    peeker2: Option<Result<T, T::Error>>
+    peeker2: Option<Result<T, T::Error>>,
+    span1: Span,
+    span2: Span,
 }
 
 impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
     pub fn new(mut lexer: Lexer<'a, T>) -> Self {
+        let span1 = lexer.span();
         let peeker1 = lexer.next();
+        let span2 = lexer.span();
         let peeker2 = lexer.next();
-        Self { lexer, peeker1, peeker2 }
+        Self { lexer, peeker1, peeker2, span1, span2 }
     }
 
     pub fn next(&mut self) -> Option<Result<T, T::Error>> {
         let peeked = self.peeker1.take();
         self.peeker1 = self.peeker2.take();
         self.peeker2 = self.lexer.next();
+
+        self.span1 = replace(&mut self.span2, self.lexer.span());
         peeked
     }
     pub fn span(&self) -> Span {
-        self.lexer.span()
+        self.span1.clone()
     }
 
     pub fn peek(&self) -> &Option<Result<T, T::Error>> {
@@ -31,8 +38,7 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
     pub fn peek2(&self) -> &Option<Result<T, T::Error>> {
         &self.peeker2
     }
-    
-    
+
 }
 
 
@@ -60,6 +66,7 @@ pub enum Token {
     #[token("'\\t'", |_| '\t')]
     #[token("'\\\\'", |_| '\\')]
     #[token("'\\r'", |_| '\r')]
+    #[token("'\\''", |_| '\'')]
     // #[regex(r"'\\u\{[\da-fA-F]{1,6}\}'", |lex| char::from_u32(lex.slice()[3..lex.span().end - lex.span().start - 2].parse::<u32>().unwrap()))]
     Char(char),
     // String(String),

@@ -1,4 +1,4 @@
-use crate::types::{Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement, Value};
+use crate::types::{Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock as CodeBlock, TypedExpr, TypedProgram as Program, TypedStatement as Statement, Value};
 use std::collections::HashMap;
 use std::io::{stderr, stdout, Write};
 use std::ops::{Neg, Not};
@@ -51,17 +51,17 @@ impl<'a, W1: Write, W2: Write> Environment<'a, W1, W2> {
 }
 
 
-pub fn interp(program: TypedProgram) -> Result<i32, String> {
+pub fn interp(program: Program) -> Result<i32, String> {
     interp_test(program, &mut stdout(), &mut stderr())
 }
 
-pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(program: TypedProgram, out: &'a mut W1, err: &'a mut W2) -> Result<i32, String> {
+pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(program: Program, out: &'a mut W1, err: &'a mut W2) -> Result<i32, String> {
     let mut interpreter = Environment::new(out, err);
     interp_codeblock(program, &mut interpreter)?;
     Ok(0)
 }
 
-fn interp_codeblock<W1: Write, W2: Write>(codeblock: TypedCodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_codeblock<W1: Write, W2: Write>(codeblock: CodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
     env.new_environment();
     for statement in codeblock {
         interp_statement(statement, env)?;
@@ -70,17 +70,25 @@ fn interp_codeblock<W1: Write, W2: Write>(codeblock: TypedCodeBlock, env: &mut E
     Ok(())
 }
 
-fn interp_statement<W1: Write, W2: Write>(statement: TypedStatement, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_statement<W1: Write, W2: Write>(statement: Statement, env: &mut Environment<W1, W2>) -> ResultUnit {
     match statement {
-        TypedStatement::Expr((e, _)) => { interp_expr(e, env)?; Ok(()) },
-        TypedStatement::Print((e, _)) => {
+        Statement::Expr((e, _)) => { interp_expr(e, env)?; Ok(()) },
+        Statement::Print((e, _)) => {
             let x = interp_expr(e, env)?;
             printer(&x, env)
         }
-        TypedStatement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
-        TypedStatement::Let(s, (e, _)) => interp_let(s, e, env),
-        TypedStatement::Assignment(s, (e, _))  => interp_assignment(s, e, env)
+        Statement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
+        Statement::Let(s, (e, _)) => interp_let(s, e, env),
+        Statement::Assignment(s, (e, _))  => interp_assignment(s, e, env),
+        Statement::While((e, _), cb) => interp_while(e, cb, env)
     }
+}
+
+fn interp_while<W1: Write, W2: Write>(e: Expr, code_block: CodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
+    while let Value::Bool(true) = interp_expr(e.clone(), env)? {
+        interp_codeblock(code_block.clone(), env)?;
+    }
+    Ok(())
 }
 
 fn interp_assignment<W1: Write, W2: Write>(s: String, expr: Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
@@ -96,8 +104,8 @@ fn interp_let<W1: Write, W2: Write>(s: String, expr: Expr, env: &mut Environment
 }
 
 
-fn interp_if<W1: Write, W2: Write>(typed_expr: TypedExpr, codeblock: TypedCodeBlock, elifs: Vec<(TypedExpr,TypedCodeBlock)>,
-             else_block: Option<TypedCodeBlock>, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_if<W1: Write, W2: Write>(typed_expr: TypedExpr, codeblock: CodeBlock, elifs: Vec<(TypedExpr, CodeBlock)>,
+             else_block: Option<CodeBlock>, env: &mut Environment<W1, W2>) -> ResultUnit {
     let (expr, _) = typed_expr;
     match interp_expr(expr, env)? {
         Value::Bool(true) => interp_codeblock(codeblock, env),

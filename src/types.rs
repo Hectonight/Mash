@@ -12,6 +12,7 @@ Statement =
 | let Id = Expr ;
 | if Expr CodeBlock [[ else if CodeBlock ]]* [[ else CodeBlock ]] [[ ; ]]
 | Id Assignment Expr ;
+| while Expr Codeblock [[ ; ]]
 
 CodeBlock =
 | { Statement* }
@@ -105,22 +106,24 @@ use std::fmt::{Display, Formatter};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Expr(Expr),
     If(Expr, CodeBlock, Vec<(Expr, CodeBlock)>, Option<CodeBlock>),
     Print(Expr),
     Let(String, Expr),
     Assignment(String, Expr),
+    While(Expr, CodeBlock),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TypedStatement {
     Expr(TypedExpr),
     If(TypedExpr, TypedCodeBlock, Vec<(TypedExpr, TypedCodeBlock)>, Option<TypedCodeBlock>),
     Print(TypedExpr),
     Let(String, TypedExpr),
     Assignment(String, TypedExpr),
+    While(TypedExpr, TypedCodeBlock),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
