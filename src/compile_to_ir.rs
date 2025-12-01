@@ -17,7 +17,6 @@ struct CEnv {
 }
 
 impl CEnv {
-
     fn new() -> Self {
         CEnv {
             variables: vec![HashMap::new()],
@@ -26,7 +25,6 @@ impl CEnv {
         }
     }
 
-    #[allow(dead_code)]
     fn new_env(&mut self) {
         self.variables.push(HashMap::new());
         self.stack_sizes.push(0);
@@ -70,7 +68,6 @@ impl CEnv {
         }
     }
 
-    #[allow(dead_code)]
     fn genlabel(&mut self, name: &str) -> Label {
         let s = format!("{}_{}", name, self.label_count);
         self.label_count += 1;
