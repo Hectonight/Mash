@@ -1,4 +1,4 @@
-use crate::constructors::{add, and, call, cmove, cmp, external, global, imul2, je, jmp, label, mov, neg, not, or, pop, push, section, shl, shr, sub, test, xor};
+use crate::constructors::{add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, imul2, je, jmp, jne, label, mov, neg, not, or, pop, push, section, shl, shr, sub, test, xor};
 use crate::inter_rep::IRInst::Ret;
 use crate::inter_rep::Label;
 use crate::inter_rep::R32::{EAX, EDI};
@@ -330,13 +330,93 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
             cenv.decrement_stack(1);
             asm
         },
-        Ops::Neq(_, _) => todo!(),
-        Ops::Lt(_, _) => todo!(),
-        Ops::Leq(_, _) => todo!(),
-        Ops::Gt(_, _) => todo!(),
-        Ops::Geq(_, _) => todo!(),
-        Ops::And(_, _) => todo!(),
-        Ops::Or(_, _) => todo!(),
+        Ops::Neq(e1, e2) => {
+            let mut asm = compile_op2(e1, e2, cenv);
+            asm.append(&mut vec![
+                pop(RDI),
+                mov(RCX, RAX),
+                xor(RAX, RAX),
+                mov(R8, 1),
+                cmp(RCX, RDI),
+                cmovne(RAX, R8)
+            ]);
+            cenv.decrement_stack(1);
+            asm
+        },
+        Ops::Lt(e1, e2) => {
+            let mut asm = compile_op2(e1, e2, cenv);
+            asm.append(&mut vec![
+                pop(RDI),
+                mov(RCX, RAX),
+                xor(RAX, RAX),
+                mov(R8, 1),
+                cmp(RDI, RCX),
+                cmovl(RAX, R8)
+            ]);
+            cenv.decrement_stack(1);
+            asm
+        },
+        Ops::Leq(e1, e2) => {
+            let mut asm = compile_op2(e1, e2, cenv);
+            asm.append(&mut vec![
+                pop(RDI),
+                mov(RCX, RAX),
+                xor(RAX, RAX),
+                mov(R8, 1),
+                cmp(RDI, RCX),
+                cmovle(RAX, R8)
+            ]);
+            cenv.decrement_stack(1);
+            asm
+        },
+        Ops::Gt(e1, e2) => {
+            let mut asm = compile_op2(e1, e2, cenv);
+            asm.append(&mut vec![
+                pop(RDI),
+                mov(RCX, RAX),
+                xor(RAX, RAX),
+                mov(R8, 1),
+                cmp(RDI, RCX),
+                cmovg(RAX, R8)
+            ]);
+            cenv.decrement_stack(1);
+            asm
+        },
+        Ops::Geq(e1, e2) => {
+            let mut asm = compile_op2(e1, e2, cenv);
+            asm.append(&mut vec![
+                pop(RDI),
+                mov(RCX, RAX),
+                xor(RAX, RAX),
+                mov(R8, 1),
+                cmp(RDI, RCX),
+                cmovge(RAX, R8)
+            ]);
+            cenv.decrement_stack(1);
+            asm
+        },
+        Ops::And(e1, e2) => {
+            let done = cenv.genlabel("done");
+            let mut asm = compile_expr(e1, cenv);
+            asm.append(&mut vec![
+                test(RAX, RAX),
+                je(done)
+            ]);
+            asm.append(&mut compile_expr(e2, cenv));
+            asm.push(label(done));
+            asm
+        },
+        Ops::Or(e1, e2) => {
+            let done = cenv.genlabel("done");
+            let mut asm = compile_expr(e1, cenv);
+            asm.append(&mut vec![
+                test(RAX, RAX),
+                jne(done)
+            ]);
+            asm.append(&mut compile_expr(e2, cenv));
+            asm.push(label(done));
+            asm
+        },
         Ops::BitAnd(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
             asm.append(&mut vec![
