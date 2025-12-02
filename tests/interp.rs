@@ -18,8 +18,6 @@ fn runner(s: String) -> (String, String, i32) {
     (stdout, stderr, code)
 }
 
-
-
 fn stdout_compare(prog: &str, expected: &str) {
     let (stdout, stderr, code) = runner(prog.to_string());
     assert_eq!(code, 0);
@@ -39,7 +37,6 @@ fn literals_prog() {
     stdout_compare("print 0b1001;", "9\n");
 }
 
-
 #[test]
 fn let_prog() {
     stdout_compare("let a = 4; print a;", "4\n");
@@ -54,5 +51,3 @@ fn assignments() {
     stdout_compare("let a = 4; a += 1; print a;", "5\n");
     stdout_compare("let a = 4; a *= 5; print a;", "20\n");
 }
-
-

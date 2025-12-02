@@ -41,10 +41,6 @@ fn get_stdout_compare(file: &str) -> impl Fn(&str, &str) + '_ {
     |a, b| stdout_compare_file(a, b, file)
 }
 
-// --------------------
-// Existing Tests
-// --------------------
-
 #[test]
 fn literals_prog() {
     let stdout_compare = get_stdout_compare("literals");
@@ -74,92 +70,109 @@ fn assignments() {
     stdout_compare("let a = 4; a *= 5; print a;", "20\n");
 }
 
-// --------------------
-// Added Tests
-// --------------------
-
 #[test]
 fn bitops_prog() {
     let stdout_compare = get_stdout_compare("bitops");
-    stdout_compare("let a = 6; let b = 3; print a & b; print a | b; print a ^ b; print ~a;",
-                   "2\n7\n5\n-7\n");
+    stdout_compare(
+        "let a = 6; let b = 3; print a & b; print a | b; print a ^ b; print ~a;",
+        "2\n7\n5\n-7\n",
+    );
 }
 
 #[test]
 fn shifts_prog() {
     let stdout_compare = get_stdout_compare("shifts");
-    stdout_compare("let x = 1; let y = 5; print x << y; print 32 >> 3;",
-                   "32\n4\n");
+    stdout_compare(
+        "let x = 1; let y = 5; print x << y; print 32 >> 3;",
+        "32\n4\n",
+    );
 }
 
 #[test]
 fn precedence_prog() {
     let stdout_compare = get_stdout_compare("precedence");
-    stdout_compare("print 1 + 2 * 3; print (1 + 2) * 3;",
-                   "7\n9\n");
+    stdout_compare("print 1 + 2 * 3; print (1 + 2) * 3;", "7\n9\n");
 }
 
 #[test]
 fn prefix_prog() {
     let stdout_compare = get_stdout_compare("prefix");
-    stdout_compare("print - -1; print +5; print !true; print ~0;",
-                   "1\n5\nfalse\n-1\n");
+    stdout_compare(
+        "print - -1; print +5; print !true; print ~0;",
+        "1\n5\nfalse\n-1\n",
+    );
 }
 
 #[test]
 fn ifs_prog() {
     let stdout_compare = get_stdout_compare("ifs");
-    stdout_compare("let n = 75; if n >= 90 { print 4; } else if n >= 80 { print 3; } else { print 1; } print n;",
-                   "1\n75\n");
+    stdout_compare(
+        "let n = 75; if n >= 90 { print 4; } else if n >= 80 { print 3; } else { print 1; } print n;",
+        "1\n75\n",
+    );
 }
 
 #[test]
 fn factorial_prog() {
     let stdout_compare = get_stdout_compare("fact");
-    stdout_compare("let n = 5; let result = 1; while n > 1 { result *= n; n -= 1; } print result;",
-                   "120\n");
+    stdout_compare(
+        "let n = 5; let result = 1; while n > 1 { result *= n; n -= 1; } print result;",
+        "120\n",
+    );
 }
 
 #[test]
 fn fibonacci_prog() {
     let stdout_compare = get_stdout_compare("fib");
-    stdout_compare("let a = 0; let b = 1; let i = 0; let tmp = 0; while i < 6 { print a; tmp = a + b; a = b; b = tmp; i += 1; }",
-                   "0\n1\n1\n2\n3\n5\n");
+    stdout_compare(
+        "let a = 0; let b = 1; let i = 0; let tmp = 0; while i < 6 { print a; tmp = a + b; a = b; b = tmp; i += 1; }",
+        "0\n1\n1\n2\n3\n5\n",
+    );
 }
 
 #[test]
 fn bitflags_prog() {
     let stdout_compare = get_stdout_compare("bitflags");
-    stdout_compare("let flags = 0; let READ = 1; let WRITE = 2; let EXEC = 4; flags |= READ | WRITE; flags &= ~WRITE; let canRead = (flags & READ) != 0; let canWrite = (flags & WRITE) != 0; print canRead; print canWrite;",
-                   "true\nfalse\n");
+    stdout_compare(
+        "let flags = 0; let READ = 1; let WRITE = 2; let EXEC = 4; flags |= READ | WRITE; flags &= ~WRITE; let canRead = (flags & READ) != 0; let canWrite = (flags & WRITE) != 0; print canRead; print canWrite;",
+        "true\nfalse\n",
+    );
 }
 
 #[test]
 fn assign_ops_prog() {
     let stdout_compare = get_stdout_compare("assign_ops");
-    stdout_compare("let a = 3; a += 4; a -= 1; a *= 2; a |= 8; a ^= 1; a &= 7; a <<= 2; a >>= 1; print a;",
-                   "10\n");
+    stdout_compare(
+        "let a = 3; a += 4; a -= 1; a *= 2; a |= 8; a ^= 1; a &= 7; a <<= 2; a >>= 1; print a;",
+        "10\n",
+    );
 }
 
 #[test]
 fn null_prog() {
     let stdout_compare = get_stdout_compare("null");
-    stdout_compare("let maybe = null; if maybe == null { print 0; } else { print 1; }",
-                   "0\n");
+    stdout_compare(
+        "let maybe = null; if maybe == null { print 0; } else { print 1; }",
+        "0\n",
+    );
 }
 
 #[test]
 fn complex_expr_prog() {
     let stdout_compare = get_stdout_compare("complex");
-    stdout_compare("let x = 5; let y = 3; let z = x * y + (x << 2) - (~y); print z;",
-                   "39\n");
+    stdout_compare(
+        "let x = 5; let y = 3; let z = x * y + (x << 2) - (~y); print z;",
+        "39\n",
+    );
 }
 
 #[test]
 fn logic_prog() {
     let stdout_compare = get_stdout_compare("logic");
-    stdout_compare("print true || false; print false && true; print (1 < 2) && (2 < 3); print (1 > 2) || (2 > 1);",
-                   "true\nfalse\ntrue\ntrue\n");
+    stdout_compare(
+        "print true || false; print false && true; print (1 < 2) && (2 < 3); print (1 > 2) || (2 > 1);",
+        "true\nfalse\ntrue\ntrue\n",
+    );
 }
 
 #[test]
