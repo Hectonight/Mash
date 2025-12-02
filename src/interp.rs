@@ -51,17 +51,17 @@ impl<'a, W1: Write, W2: Write> Environment<'a, W1, W2> {
 }
 
 
-pub fn interp(program: Program) -> Result<i32, String> {
+pub fn interp(program: &Program) -> Result<i32, String> {
     interp_test(program, &mut stdout(), &mut stderr())
 }
 
-pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(program: Program, out: &'a mut W1, err: &'a mut W2) -> Result<i32, String> {
+pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(program: &Program, out: &'a mut W1, err: &'a mut W2) -> Result<i32, String> {
     let mut interpreter = Environment::new(out, err);
     interp_codeblock(program, &mut interpreter)?;
     Ok(0)
 }
 
-fn interp_codeblock<W1: Write, W2: Write>(codeblock: CodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_codeblock<W1: Write, W2: Write>(codeblock: &CodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
     env.new_environment();
     for statement in codeblock {
         interp_statement(statement, env)?;
@@ -70,7 +70,7 @@ fn interp_codeblock<W1: Write, W2: Write>(codeblock: CodeBlock, env: &mut Enviro
     Ok(())
 }
 
-fn interp_statement<W1: Write, W2: Write>(statement: Statement, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_statement<W1: Write, W2: Write>(statement: &Statement, env: &mut Environment<W1, W2>) -> ResultUnit {
     match statement {
         Statement::Expr((e, _)) => { interp_expr(e, env)?; Ok(()) },
         Statement::Print((e, _)) => {
@@ -80,32 +80,34 @@ fn interp_statement<W1: Write, W2: Write>(statement: Statement, env: &mut Enviro
         Statement::If(e,then,elifs,else_block) => interp_if(e, then, elifs, else_block, env),
         Statement::Let(s, (e, _)) => interp_let(s, e, env),
         Statement::Assignment(s, (e, _))  => interp_assignment(s, e, env),
-        Statement::While((e, _), cb) => interp_while(e, cb, env)
+        Statement::While((e, _), cb) => interp_while(e, cb, env),
+        Statement::Break(_) => todo!(),
+        Statement::Continue => todo!(),
     }
 }
 
-fn interp_while<W1: Write, W2: Write>(e: Expr, code_block: CodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
-    while let Value::Bool(true) = interp_expr(e.clone(), env)? {
-        interp_codeblock(code_block.clone(), env)?;
+fn interp_while<W1: Write, W2: Write>(e: &Expr, code_block: &CodeBlock, env: &mut Environment<W1, W2>) -> ResultUnit {
+    while let Value::Bool(true) = interp_expr(e, env)? {
+        interp_codeblock(code_block, env)?;
     }
     Ok(())
 }
 
-fn interp_assignment<W1: Write, W2: Write>(s: String, expr: Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_assignment<W1: Write, W2: Write>(s: &String, expr: &Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
     let x = interp_expr(expr, env)?;
-    env.update(s, x);
+    env.update(s.clone(), x);
     Ok(())
 }
 
-fn interp_let<W1: Write, W2: Write>(s: String, expr: Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_let<W1: Write, W2: Write>(s: &String, expr: &Expr, env: &mut Environment<W1, W2>) -> ResultUnit {
     let v = interp_expr(expr, env)?;
-    env.insert(s, v);
+    env.insert(s.clone(), v);
     Ok(())
 }
 
 
-fn interp_if<W1: Write, W2: Write>(typed_expr: TypedExpr, codeblock: CodeBlock, elifs: Vec<(TypedExpr, CodeBlock)>,
-             else_block: Option<CodeBlock>, env: &mut Environment<W1, W2>) -> ResultUnit {
+fn interp_if<W1: Write, W2: Write>(typed_expr: &TypedExpr, codeblock: &CodeBlock, elifs: &Vec<(TypedExpr, CodeBlock)>,
+             else_block: &Option<CodeBlock>, env: &mut Environment<W1, W2>) -> ResultUnit {
     let (expr, _) = typed_expr;
     match interp_expr(expr, env)? {
         Value::Bool(true) => interp_codeblock(codeblock, env),
@@ -140,7 +142,7 @@ fn printer<W1: Write, W2: Write>(value: &Value, env: &mut Environment<W1, W2>) -
 }
 
 
-fn interp_expr<W1: Write, W2: Write>(expr: Expr, env: &Environment<W1, W2>) -> ResultValue {
+fn interp_expr<W1: Write, W2: Write>(expr: &Expr, env: &Environment<W1, W2>) -> ResultValue {
     match expr {
         Expr::Datum(x) => Ok(interp_datum(&x)),
         Expr::Identifier(s) => {
@@ -154,36 +156,36 @@ fn interp_expr<W1: Write, W2: Write>(expr: Expr, env: &Environment<W1, W2>) -> R
     }
 }
 
-fn interp_ops<W1: Write, W2: Write>(op: Ops, env: &Environment<W1, W2>) -> ResultValue {
+fn interp_ops<W1: Write, W2: Write>(op: &Ops, env: &Environment<W1, W2>) -> ResultValue {
     match op {
         Ops::Ternary(a, b, c) => {
-            match interp_expr(*a, env)? {
-                Value::Bool(true) => interp_expr(*b, env),
-                Value::Bool(false) => interp_expr(*c, env),
+            match interp_expr(&**a, env)? {
+                Value::Bool(true) => interp_expr(&**b, env),
+                Value::Bool(false) => interp_expr(&**c, env),
                 _ => Err("Type Error".to_owned())
             }
         }
-        Ops::Pos(a) => interp_expr(*a, env),
-        Ops::Neg(a) => interp_expr(*a, env)?.neg(),
-        Ops::Not(a) | Ops::BitNot(a) => interp_expr(*a, env)?.not(),
-        Ops::Plus(a, b) => interp_expr(*a, env)? + interp_expr(*b, env)?,
-        Ops::Minus(a, b) => interp_expr(*a, env)? - interp_expr(*b, env)?,
-        Ops::Mul(a,b) => interp_expr(*a, env)? * interp_expr(*b, env)?,
-        Ops::Div(a,b) => interp_expr(*a, env)? / interp_expr(*b, env)?,
-        Ops::Mod(a,b) => interp_expr(*a, env)? % interp_expr(*b, env)?,
-        Ops::Gt(a,b) => interp_expr(*a, env)?.greater(interp_expr(*b, env)?),
-        Ops::Lt(a,b) => interp_expr(*a, env)?.less(interp_expr(*b, env)?),
-        Ops::Geq(a,b) => interp_expr(*a, env)?.greater_eq(interp_expr(*b, env)?),
-        Ops::Leq(a,b) => interp_expr(*a, env)?.less_eq(interp_expr(*b, env)?),
-        Ops::Neq(a,b) => interp_expr(*a, env)?.not_equal(interp_expr(*b, env)?),
-        Ops::Eq(a,b) => interp_expr(*a, env)?.equal(interp_expr(*b, env)?),
-        Ops::And(a,b) => interp_expr(*a, env)?.and(interp_expr(*b, env)?),
-        Ops::Or(a,b) => interp_expr(*a, env)?.or(interp_expr(*b, env)?),
-        Ops::BitAnd(a,b) => interp_expr(*a, env)? & interp_expr(*b, env)?,
-        Ops::BitOr(a,b) => interp_expr(*a, env)? | interp_expr(*b, env)?,
-        Ops::BitXor(a,b) => interp_expr(*a, env)? ^ interp_expr(*b, env)?,
-        Ops::BitShiftLeft(a,b) => interp_expr(*a, env)? << interp_expr(*b, env)?,
-        Ops::BitShiftRight(a,b) => interp_expr(*a, env)? >> interp_expr(*b, env)?,
+        Ops::Pos(a) => interp_expr(&**a, env),
+        Ops::Neg(a) => interp_expr(&**a, env)?.neg(),
+        Ops::Not(a) | Ops::BitNot(a) => interp_expr(&**a, env)?.not(),
+        Ops::Plus(a, b) => interp_expr(&**a, env)? + interp_expr(&**b, env)?,
+        Ops::Minus(a, b) => interp_expr(&**a, env)? - interp_expr(&**b, env)?,
+        Ops::Mul(a,b) => interp_expr(&**a, env)? * interp_expr(&**b, env)?,
+        Ops::Div(a,b) => interp_expr(&**a, env)? / interp_expr(&**b, env)?,
+        Ops::Mod(a,b) => interp_expr(&**a, env)? % interp_expr(&**b, env)?,
+        Ops::Gt(a,b) => interp_expr(&**a, env)?.greater(interp_expr(&**b, env)?),
+        Ops::Lt(a,b) => interp_expr(&**a, env)?.less(interp_expr(&**b, env)?),
+        Ops::Geq(a,b) => interp_expr(&**a, env)?.greater_eq(interp_expr(&**b, env)?),
+        Ops::Leq(a,b) => interp_expr(&**a, env)?.less_eq(interp_expr(&**b, env)?),
+        Ops::Neq(a,b) => interp_expr(&**a, env)?.not_equal(interp_expr(&**b, env)?),
+        Ops::Eq(a,b) => interp_expr(&**a, env)?.equal(interp_expr(&**b, env)?),
+        Ops::And(a,b) => interp_expr(&**a, env)?.and(interp_expr(&**b, env)?),
+        Ops::Or(a,b) => interp_expr(&**a, env)?.or(interp_expr(&**b, env)?),
+        Ops::BitAnd(a,b) => interp_expr(&**a, env)? & interp_expr(&**b, env)?,
+        Ops::BitOr(a,b) => interp_expr(&**a, env)? | interp_expr(&**b, env)?,
+        Ops::BitXor(a,b) => interp_expr(&**a, env)? ^ interp_expr(&**b, env)?,
+        Ops::BitShiftLeft(a,b) => interp_expr(&**a, env)? << interp_expr(&**b, env)?,
+        Ops::BitShiftRight(a,b) => interp_expr(&**a, env)? >> interp_expr(&**b, env)?,
     }
 }
 

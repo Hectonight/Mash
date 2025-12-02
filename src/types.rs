@@ -13,6 +13,7 @@ Statement =
 | if Expr CodeBlock [[ else if CodeBlock ]]* [[ else CodeBlock ]] [[ ; ]]
 | Id Assignment Expr ;
 | while Expr Codeblock [[ ; ]]
+| break ;
 
 CodeBlock =
 | { Statement* }
@@ -101,6 +102,68 @@ AfterOps =
 | Datum
 | Id
 
+
+
+Future Optimizations
+
+a [+-*|&^] b => c
+[+-!~] a => b
+a || b => c
+a && b => c
+true || x => true
+false && x => false
+x / 1 => x
+x / -1 => - x
+x * 1 or 1 * x => x
+x + 0 or 0 + x => x
+x - 0 => x
+0 - x => - x
+x ^ x => 0
+x & -1 or -1 & x => x
+x ^ -1 or -1 ^ x => ~ x
+x | 0 or 0 | x => x
+x & 0 or 0 & x => 0
+x | -1 or -1 | x => -1
+x | ~x or ~x | x => -1
+x << 0 => 0
+x >> 0 => 0
+x / 2**n => x >> n
+x * 2**n => x << n
+x * -1 or -1 * x => - x
+~ x + 1 or 1 + ~ x => - x
+
+x = x => delete (after parsing += and similar operators do not exist)
+a [%/] b_nonzero => c
+if true { s* } else if ... else ... => s*
+if false { ... } else if ... else if true { s* } else if ... else ... => s*
+if false { ... } else if false { ... } ... else { s* } => s*
+{ ...; break n?; ... } => { ...; break n?; }
+{ ...; continue; ... } => { ...; continue; }
+while ... { s*; continue; ...;} => while ... { s* }
+while true { s*; break 1; } => s*
+while true { s*; break n; } where n > 1 => s*; break n-1;
+while e { break 1; ... } => e;
+while e { break n; ... } where n > 1 => e; break n-1;
+while e { s*; break 1; } => if e { s* }
+while e { s*; break n; } where n > 1 => if e { s* break n-1 }
+while false { ... } => delete
+
+Be careful on optimizing asm because of flags, to optimize add and others
+I need to make some rules when writing asm or require more complex logic than simple rules
+Semicolons denote new lines
+
+push reg; pop X => mov X, reg
+push X; pop reg => mov reg, X
+mov X, X => delete (this should not ever be written anyway)
+cmovcc X, X => delete (this should not ever be written anyway)
+
+move extern to start and remove duplicates (assume this for future optimizations)
+
+jmp X; ... ; Label Y => jmp X; Label Y
+... is not Label and Extern (we know it's not extern due to previous optimizations)
+
+add case for while true which simplifies the code significantly (only if no break statement in while)
+add cases in conditionals no reason i need to actually return 1 or 0 I can just cmp X, Y for x == y
  */
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
@@ -114,6 +177,8 @@ pub enum Statement {
     Let(String, Expr),
     Assignment(String, Expr),
     While(Expr, CodeBlock),
+    Break(usize),
+    Continue
 }
 
 #[derive(Debug, Clone)]
@@ -124,6 +189,8 @@ pub enum TypedStatement {
     Let(String, TypedExpr),
     Assignment(String, TypedExpr),
     While(TypedExpr, TypedCodeBlock),
+    Break(usize),
+    Continue
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

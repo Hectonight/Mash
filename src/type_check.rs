@@ -3,11 +3,12 @@ use std::collections::HashMap;
 
 struct TEnv {
     environment: Vec<HashMap<String, Type>>,
+    control_flow: usize
 }
 
 impl TEnv {
     fn new() -> Self {
-        Self { environment: vec![HashMap::new()] }
+        Self { environment: vec![HashMap::new()], control_flow: 0 }
     }
 
     fn new_environment(&mut self) {
@@ -87,6 +88,7 @@ fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatem
             }
         }
         Statement::While(e, cb) => {
+            tenv.control_flow += 1;
             let (ex, t) = typify_expr(e, tenv)?;
             if t != Type::Bool {
                 Err(format!("While type mismatch, found {} expected bool", t))
@@ -94,7 +96,16 @@ fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatem
                 Ok(TypedStatement::While((ex, Type::Bool), typify_codeblock(cb, tenv)?))
             }
         }
+        Statement::Break(n) => {
+            if tenv.control_flow >= n {
+                tenv.control_flow -= n;
+                Ok(TypedStatement::Break(n))
+            } else {
+                Err(format!("Found break of {} in depth {}", n, tenv.control_flow))
+            }
         }
+        Statement::Continue => Ok(TypedStatement::Continue),
+    }
     }
 
 

@@ -6,7 +6,7 @@ use crate::inter_rep::R64::{R15, R8, RAX, RCX, RDI, RDX, RSP};
 use crate::inter_rep::R8::CL;
 use crate::inter_rep::{AsmProg, Mem};
 use crate::mem;
-use crate::types::{Datum, Expr, Ops, Type, TypedCodeBlock as CodeBlock, TypedProgram as Program, TypedStatement as Statement};
+use crate::types::{Datum, Expr, Ops, Type, TypedCodeBlock as CodeBlock, TypedProgram as Program, TypedStatement as Statement, TypedStatement};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -14,6 +14,7 @@ struct CEnv {
     variables: Vec<HashMap<String, usize>>,
     stack_sizes: Vec<usize>,
     label_count: usize,
+    control_flow: Vec<(Label, Label, usize)>,
 }
 
 impl CEnv {
@@ -21,7 +22,8 @@ impl CEnv {
         CEnv {
             variables: vec![HashMap::new()],
             stack_sizes: vec![0],
-            label_count: 0
+            label_count: 0,
+            control_flow: vec![],
         }
     }
 
@@ -71,8 +73,27 @@ impl CEnv {
     fn genlabel(&mut self, name: &str) -> Label {
         let s = format!("{}_{}", name, self.label_count);
         self.label_count += 1;
-
         s
+    }
+
+    fn breaker(&self, loops: usize) -> (&Label, usize) {
+        let (_, end, size) = &self.control_flow[self.control_flow.len() - loops];
+        let s: usize = self.stack_sizes[*size..].iter().sum();
+        (end, s * 8)
+    }
+
+    fn continuer(&self) -> (&Label, usize) {
+        let (start, _, _) = &self.control_flow[self.control_flow.len() - 1];
+        let s = self.stack_sizes[self.control_flow.len() - 1];
+        (start, s * 8)
+    }
+
+    fn incr_control_flow(&mut self, start: String, end: String) {
+        self.control_flow.push((start, end, self.variables.len()));
+    }
+
+    fn decr_control_flow(&mut self) {
+        self.control_flow.pop();
     }
 
 }
@@ -112,13 +133,34 @@ fn compile_statement(statement: &Statement, cenv: &mut CEnv) -> AsmProg {
         Statement::Print((e, t)) => compile_print(e, t, cenv),
         Statement::Let(s, (e, _)) => compile_let(s, e, cenv),
         Statement::Assignment(s, (e, _)) => compile_assignment(s, e, cenv),
-        Statement::While((e, _), cb) => compile_while(e, cb, cenv)
+        Statement::While((e, _), cb) => compile_while(e, cb, cenv),
+        TypedStatement::Break(n) => compile_break(*n, cenv),
+        TypedStatement::Continue => compile_continue(cenv),
+    }
+}
+
+fn compile_continue(cenv: &mut CEnv) -> AsmProg {
+    let (start, adder) = cenv.continuer();
+    if adder != 0 {
+        vec![add(RSP, adder), jmp(start.clone())]
+    } else {
+        vec![jmp(start.clone())]
+    }
+}
+
+fn compile_break(loops: usize, cenv: &mut CEnv) -> AsmProg {
+    let (end, adder) = cenv.breaker(loops);
+    if adder != 0 {
+        vec![add(RSP, adder), jmp(end.clone())]
+    } else {
+        vec![jmp(end.clone())]
     }
 }
 
 fn compile_while(e: &Expr, code_block: &CodeBlock, cenv: &mut CEnv) -> AsmProg {
     let while_label = cenv.genlabel("while");
     let done = cenv.genlabel("done");
+    cenv.incr_control_flow(while_label.clone(), done.clone());
     let mut asm = vec![label(while_label.clone())];
     asm.append(&mut compile_expr(e, cenv));
     asm.append(&mut vec![
@@ -128,6 +170,7 @@ fn compile_while(e: &Expr, code_block: &CodeBlock, cenv: &mut CEnv) -> AsmProg {
     asm.append(&mut compile_codeblock(code_block, cenv));
     asm.push(jmp(while_label));
     asm.push(label(done));
+    cenv.decr_control_flow();
     asm
 }
 
@@ -178,7 +221,10 @@ fn compile_if(expr: &Expr, then: &CodeBlock, elifs: Vec<(&Expr, &CodeBlock)>, el
 fn compile_codeblock(block: &CodeBlock, cenv: &mut CEnv) -> AsmProg {
     cenv.new_env();
     let mut asm = block.iter().flat_map(|s| compile_statement(s, cenv)).collect::<AsmProg>();
-    asm.push(add(RSP,cenv.pop_env()));
+    let adder = cenv.pop_env();
+    if adder > 0 {
+        asm.push(add(RSP,adder));
+    }
     asm
 }
 

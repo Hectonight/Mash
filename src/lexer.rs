@@ -61,12 +61,12 @@ pub enum Token {
     // Char(char),
 
     #[regex(r"'[^'\\\x00\t\xa0\xd0]'", |lex| lex.slice()[1..2].parse::<char>().unwrap())]
-    #[token("'\\n'", |_| '\n')]
-    #[token("'\\0'", |_| '\0')]
-    #[token("'\\t'", |_| '\t')]
-    #[token("'\\\\'", |_| '\\')]
-    #[token("'\\r'", |_| '\r')]
-    #[token("'\\''", |_| '\'')]
+    #[token(r"'\n'", |_| '\n')]
+    #[token(r"'\0'", |_| '\0')]
+    #[token(r"'\t'", |_| '\t')]
+    #[token(r"'\\'", |_| '\\')]
+    #[token(r"'\r'", |_| '\r')]
+    #[token(r"'\''", |_| '\'')]
     // #[regex(r"'\\u\{[\da-fA-F]{1,6}\}'", |lex| char::from_u32(lex.slice()[3..lex.span().end - lex.span().start - 2].parse::<u32>().unwrap()))]
     Char(char),
     // String(String),
@@ -239,6 +239,9 @@ pub enum Token {
 
     #[token("break")]
     Break,
+
+    #[token("continue")]
+    Continue,
 
     #[token("return")]
     Return,

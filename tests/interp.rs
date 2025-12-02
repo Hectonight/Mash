@@ -12,7 +12,7 @@ fn runner(s: String) -> (String, String, i32) {
 
     let mut out = vec![];
     let mut err = vec![];
-    let code = interp_test(typed, &mut out, &mut err).expect("Program Failed");
+    let code = interp_test(&typed, &mut out, &mut err).expect("Program Failed");
     let stdout = String::from_utf8(out).unwrap();
     let stderr = String::from_utf8(err).unwrap();
     (stdout, stderr, code)

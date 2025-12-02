@@ -57,8 +57,27 @@ fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
             parse_assignment(lexer)
         },
         | (Some(Ok(Token::While)), _) => {lexer.next(); parse_while(lexer) }
-        (None, _) => unexpected_eof(lexer),
-        _ => parse_statement_expr(lexer)
+        | (Some(Ok(Token::Break)), _) => {lexer.next(); parse_break(lexer) }
+        | (Some(Ok(Token::Continue)), _) => {lexer.next(); Ok(Statement::Continue) }
+        | (None, _) => unexpected_eof(lexer),
+        | _ => parse_statement_expr(lexer)
+    }
+}
+
+fn parse_break(lexer: &mut PeekableLexer<Token>) -> ParseResult<Statement> {
+    match lexer.next() {
+        Some(Ok(Token::Semicolon)) => Ok(Statement::Break(1)),
+        Some(Ok(Token::Int(n))) => {
+            if n > 0 {
+                assert_token(lexer, Token::Semicolon, "")?;
+                Ok(Statement::Break(n as usize))
+            } else {
+                Err((format!("Break expects positive integer, found {}", n), lexer.span()))
+            }
+        }
+        None => unexpected_eof(lexer),
+        Some(Ok(t)) => unexpected_token(lexer, t),
+        Some(Err(_)) => unrecognized_token(lexer),
     }
 }
 
