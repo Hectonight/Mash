@@ -1,7 +1,6 @@
 #![allow(dead_code)]
-use crate::inter_rep::{IRInst, Imm, Label, Operand, Register};
 use crate::inter_rep::IRInst::IMul;
-
+use crate::inter_rep::{IRInst, Imm, Label, Operand, Register};
 
 #[macro_export]
 macro_rules! make_op_op {
@@ -21,7 +20,7 @@ macro_rules! make_op {
 
 macro_rules! make_reg_op {
     ($name:ident, $instr_name:ident) => {
-        pub fn $name<A: Into<Register>, B: Into<Operand>>(a: A, b:B) -> IRInst {
+        pub fn $name<A: Into<Register>, B: Into<Operand>>(a: A, b: B) -> IRInst {
             IRInst::$instr_name(a.into(), b.into())
         }
     };
@@ -30,7 +29,7 @@ macro_rules! make_reg_op {
 macro_rules! make_imm {
     ($name:ident, $instr_name:ident) => {
         pub fn $name<A: Into<Imm>>(a: A) -> IRInst {
-            IRInst::$instr_name(a.into(),)
+            IRInst::$instr_name(a.into())
         }
     };
 }
@@ -38,18 +37,21 @@ macro_rules! make_imm {
 macro_rules! make_label {
     ($name:ident, $instr_name:ident) => {
         pub fn $name<A: Into<Label>>(a: A) -> IRInst {
-            IRInst::$instr_name(a.into(),)
+            IRInst::$instr_name(a.into())
         }
     };
 }
 
-pub fn imul<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(op1: A, op2: Option<B>, imm: Option<C>) -> IRInst {
+pub fn imul<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(
+    op1: A,
+    op2: Option<B>,
+    imm: Option<C>,
+) -> IRInst {
     let oper1 = op1.into();
     let oper2 = op2.map(|b| b.into());
     let i = imm.map(|c| c.into());
     IMul(oper1, oper2, i)
 }
-
 
 pub fn imul3<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(op1: A, op2: B, imm: C) -> IRInst {
     let oper1 = op1.into();
@@ -68,8 +70,6 @@ pub fn imul1<A: Into<Operand>>(op1: A) -> IRInst {
     let oper1 = op1.into();
     IMul(oper1, None, None)
 }
-
-
 
 make_op_op!(mov, Mov);
 make_op_op!(add, Add);

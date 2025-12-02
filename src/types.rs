@@ -168,7 +168,6 @@ add cases in conditionals no reason i need to actually return 1 or 0 I can just 
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
 
-
 #[derive(Debug, Clone)]
 pub enum Statement {
     Expr(Expr),
@@ -178,19 +177,24 @@ pub enum Statement {
     Assignment(String, Expr),
     While(Expr, CodeBlock),
     Break(usize),
-    Continue
+    Continue,
 }
 
 #[derive(Debug, Clone)]
 pub enum TypedStatement {
     Expr(TypedExpr),
-    If(TypedExpr, TypedCodeBlock, Vec<(TypedExpr, TypedCodeBlock)>, Option<TypedCodeBlock>),
+    If(
+        TypedExpr,
+        TypedCodeBlock,
+        Vec<(TypedExpr, TypedCodeBlock)>,
+        Option<TypedCodeBlock>,
+    ),
     Print(TypedExpr),
     Let(String, TypedExpr),
     Assignment(String, TypedExpr),
     While(TypedExpr, TypedCodeBlock),
     Break(usize),
-    Continue
+    Continue,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -203,12 +207,16 @@ pub enum Type {
 
 impl Display for Type {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Type::Int => "int",
-            Type::Bool => "bool",
-            Type::Null => "null",
-            Type::Char => "char"
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Type::Int => "int",
+                Type::Bool => "bool",
+                Type::Null => "null",
+                Type::Char => "char",
+            }
+        )
     }
 }
 
@@ -218,13 +226,12 @@ pub type CodeBlock = Vec<Statement>;
 pub type TypedCodeBlock = Vec<TypedStatement>;
 pub type TypedExpr = (Expr, Type);
 
-
 // All recursive Expr will be in a box
 #[derive(Debug, Clone)]
 pub enum Expr {
     Datum(Datum),
     Identifier(String),
-    Op(Ops)
+    Op(Ops),
 }
 
 #[derive(Debug, Clone)]
@@ -254,15 +261,13 @@ pub enum Ops {
     BitShiftRight(Box<Expr>, Box<Expr>),
 }
 
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Datum {
     Int(i64),
     Bool(bool),
     Char(char),
-    Null
+    Null,
 }
-
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Value {
@@ -279,8 +284,8 @@ impl Add for Value {
     type Output = ResultValue;
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a + b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a + b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -289,19 +294,18 @@ impl Sub for Value {
     type Output = ResultValue;
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a - b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a - b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
-
 
 impl Mul for Value {
     type Output = ResultValue;
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a * b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a * b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -310,8 +314,8 @@ impl Div for Value {
     type Output = ResultValue;
     fn div(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a / b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a / b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -320,9 +324,9 @@ impl Not for Value {
     type Output = ResultValue;
     fn not(self) -> Self::Output {
         match self {
-            Value::Int(a) =>  Ok(Value::Int(!a)),
-            Value::Bool(a) =>  Ok(Value::Bool(!a)),
-            _ => Err("Type Error".to_owned())
+            Value::Int(a) => Ok(Value::Int(!a)),
+            Value::Bool(a) => Ok(Value::Bool(!a)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -332,7 +336,7 @@ impl Neg for Value {
     fn neg(self) -> Self::Output {
         match self {
             Value::Int(a) => Ok(Value::Int(-a)),
-            _ => Err("Type Error".to_owned())
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -341,8 +345,8 @@ impl BitOr for Value {
     type Output = ResultValue;
     fn bitor(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a | b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a | b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -351,8 +355,8 @@ impl BitXor for Value {
     type Output = ResultValue;
     fn bitxor(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a ^ b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a ^ b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -361,8 +365,8 @@ impl BitAnd for Value {
     type Output = ResultValue;
     fn bitand(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a & b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a & b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -371,8 +375,8 @@ impl Rem for Value {
     type Output = ResultValue;
     fn rem(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a % b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a % b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -382,8 +386,8 @@ impl Shl for Value {
 
     fn shl(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a << b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a << b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -393,8 +397,8 @@ impl Shr for Value {
 
     fn shr(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Int(a >> b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Int(a >> b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }
@@ -410,43 +414,43 @@ impl Value {
 
     pub(crate) fn less(self, rhs: Self) -> ResultValue {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a < b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a < b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 
     pub(crate) fn less_eq(self, rhs: Self) -> ResultValue {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a <= b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a <= b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 
     pub(crate) fn greater(self, rhs: Self) -> ResultValue {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a > b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a > b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 
     pub(crate) fn greater_eq(self, rhs: Self) -> ResultValue {
         match (self, rhs) {
-            (Value::Int(a), Value::Int(b)) =>  Ok(Value::Bool(a >= b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Int(a), Value::Int(b)) => Ok(Value::Bool(a >= b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 
     pub(crate) fn and(self, rhs: Self) -> ResultValue {
         match (self, rhs) {
-            (Value::Bool(a), Value::Bool(b)) =>  Ok(Value::Bool(a && b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a && b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 
     pub(crate) fn or(self, rhs: Self) -> ResultValue {
         match (self, rhs) {
-            (Value::Bool(a), Value::Bool(b)) =>  Ok(Value::Bool(a || b)),
-            _ => Err("Type Error".to_owned())
+            (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(a || b)),
+            _ => Err("Type Error".to_owned()),
         }
     }
 }

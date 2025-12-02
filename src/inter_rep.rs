@@ -1,4 +1,3 @@
-
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
@@ -49,85 +48,291 @@ impl From<Register> for Operand {
 
 #[macro_export]
 macro_rules! reg {
-    (RAX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RAX) };
-    (RBX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RBX) };
-    (RCX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RCX) };
-    (RDX)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RDX) };
-    (RSI)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RSI) };
-    (RDI)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RDI) };
-    (RBP)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RBP) };
-    (RSP)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::RSP) };
-    (R8)   => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R8) };
-    (R9)   => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R9) };
-    (R10)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R10) };
-    (R11)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R11) };
-    (R12)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R12) };
-    (R13)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R13) };
-    (R14)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R14) };
-    (R15)  => { $crate::inter_rep::Register::R64($crate::inter_rep::R64::R15) };
+    (RAX) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RAX)
+    };
+    (RBX) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RBX)
+    };
+    (RCX) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RCX)
+    };
+    (RDX) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RDX)
+    };
+    (RSI) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RSI)
+    };
+    (RDI) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RDI)
+    };
+    (RBP) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RBP)
+    };
+    (RSP) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::RSP)
+    };
+    (R8) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R8)
+    };
+    (R9) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R9)
+    };
+    (R10) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R10)
+    };
+    (R11) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R11)
+    };
+    (R12) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R12)
+    };
+    (R13) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R13)
+    };
+    (R14) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R14)
+    };
+    (R15) => {
+        $crate::inter_rep::Register::R64($crate::inter_rep::R64::R15)
+    };
 
-    (EAX)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::EAX) };
-    (EBX)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::EBX) };
-    (ECX)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::ECX) };
-    (EDX)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::EDX) };
-    (ESI)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::ESI) };
-    (EDI)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::EDI) };
-    (EBP)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::EBP) };
-    (ESP)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::ESP) };
-    (R8D)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R8D) };
-    (R9D)  => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R9D) };
-    (R10D) => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R10D) };
-    (R11D) => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R11D) };
-    (R12D) => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R12D) };
-    (R13D) => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R13D) };
-    (R14D) => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R14D) };
-    (R15D) => { $crate::inter_rep::Register::R32($crate::inter_rep::R32::R15D) };
+    (EAX) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::EAX)
+    };
+    (EBX) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::EBX)
+    };
+    (ECX) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::ECX)
+    };
+    (EDX) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::EDX)
+    };
+    (ESI) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::ESI)
+    };
+    (EDI) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::EDI)
+    };
+    (EBP) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::EBP)
+    };
+    (ESP) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::ESP)
+    };
+    (R8D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R8D)
+    };
+    (R9D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R9D)
+    };
+    (R10D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R10D)
+    };
+    (R11D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R11D)
+    };
+    (R12D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R12D)
+    };
+    (R13D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R13D)
+    };
+    (R14D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R14D)
+    };
+    (R15D) => {
+        $crate::inter_rep::Register::R32($crate::inter_rep::R32::R15D)
+    };
 
-    (AX)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::AX) };
-    (BX)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::BX) };
-    (CX)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::CX) };
-    (DX)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::DX) };
-    (SI)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::SI) };
-    (DI)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::DI) };
-    (BP)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::BP) };
-    (SP)   => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::SP) };
-    (R8W)  => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R8W) };
-    (R9W)  => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R9W) };
-    (R10W) => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R10W) };
-    (R11W) => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R11W) };
-    (R12W) => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R12W) };
-    (R13W) => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R13W) };
-    (R14W) => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R14W) };
-    (R15W) => { $crate::inter_rep::Register::R16($crate::inter_rep::R16::R15W) };
+    (AX) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::AX)
+    };
+    (BX) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::BX)
+    };
+    (CX) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::CX)
+    };
+    (DX) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::DX)
+    };
+    (SI) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::SI)
+    };
+    (DI) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::DI)
+    };
+    (BP) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::BP)
+    };
+    (SP) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::SP)
+    };
+    (R8W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R8W)
+    };
+    (R9W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R9W)
+    };
+    (R10W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R10W)
+    };
+    (R11W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R11W)
+    };
+    (R12W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R12W)
+    };
+    (R13W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R13W)
+    };
+    (R14W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R14W)
+    };
+    (R15W) => {
+        $crate::inter_rep::Register::R16($crate::inter_rep::R16::R15W)
+    };
 
-    (AL)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::AL) };
-    (BL)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::BL) };
-    (CL)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::CL) };
-    (DL)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::DL) };
-    (AH)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::AH) };
-    (BH)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::BH) };
-    (CH)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::CH) };
-    (DH)   => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::DH) };
-    (SIL)  => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::SIL) };
-    (DIL)  => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::DIL) };
-    (BPL)  => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::BPL) };
-    (SPL)  => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::SPL) };
-    (R8B)  => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R8B) };
-    (R9B)  => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R9B) };
-    (R10B) => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R10B) };
-    (R11B) => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R11B) };
-    (R12B) => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R12B) };
-    (R13B) => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R13B) };
-    (R14B) => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R14B) };
-    (R15B) => { $crate::inter_rep::Register::R8($crate::inter_rep::R8::R15B) };
+    (AL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::AL)
+    };
+    (BL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::BL)
+    };
+    (CL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::CL)
+    };
+    (DL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::DL)
+    };
+    (AH) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::AH)
+    };
+    (BH) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::BH)
+    };
+    (CH) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::CH)
+    };
+    (DH) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::DH)
+    };
+    (SIL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::SIL)
+    };
+    (DIL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::DIL)
+    };
+    (BPL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::BPL)
+    };
+    (SPL) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::SPL)
+    };
+    (R8B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R8B)
+    };
+    (R9B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R9B)
+    };
+    (R10B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R10B)
+    };
+    (R11B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R11B)
+    };
+    (R12B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R12B)
+    };
+    (R13B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R13B)
+    };
+    (R14B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R14B)
+    };
+    (R15B) => {
+        $crate::inter_rep::Register::R8($crate::inter_rep::R8::R15B)
+    };
 }
 
-define_registers!(R64 { RAX, RBX, RCX, RDX, RSI, RDI, RBP, RSP, R8, R9, R10, R11, R12, R13, R14, R15 });
-define_registers!(R32 { EAX, EBX, ECX, EDX, ESI, EDI, EBP, ESP, R8D, R9D, R10D, R11D, R12D, R13D, R14D, R15D });
-define_registers!(R16 { AX, BX, CX, DX, SI, DI, BP, SP, R8W, R9W, R10W, R11W, R12W, R13W, R14W, R15W });
-define_registers!(R8 { AL, BL, CL, DL, AH, BH, CH, DH, SIL, DIL, BPL, SPL, R8B, R9B, R10B, R11B, R12B, R13B, R14B, R15B });
-
-
+define_registers!(R64 {
+    RAX,
+    RBX,
+    RCX,
+    RDX,
+    RSI,
+    RDI,
+    RBP,
+    RSP,
+    R8,
+    R9,
+    R10,
+    R11,
+    R12,
+    R13,
+    R14,
+    R15
+});
+define_registers!(R32 {
+    EAX,
+    EBX,
+    ECX,
+    EDX,
+    ESI,
+    EDI,
+    EBP,
+    ESP,
+    R8D,
+    R9D,
+    R10D,
+    R11D,
+    R12D,
+    R13D,
+    R14D,
+    R15D
+});
+define_registers!(R16 {
+    AX,
+    BX,
+    CX,
+    DX,
+    SI,
+    DI,
+    BP,
+    SP,
+    R8W,
+    R9W,
+    R10W,
+    R11W,
+    R12W,
+    R13W,
+    R14W,
+    R15W
+});
+define_registers!(R8 {
+    AL,
+    BL,
+    CL,
+    DL,
+    AH,
+    BH,
+    CH,
+    DH,
+    SIL,
+    DIL,
+    BPL,
+    SPL,
+    R8B,
+    R9B,
+    R10B,
+    R11B,
+    R12B,
+    R13B,
+    R14B,
+    R15B
+});
 
 impl Display for Register {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -139,7 +344,6 @@ impl Display for Register {
         }
     }
 }
-
 
 #[derive(Debug)]
 pub enum IRInst {
@@ -240,16 +444,15 @@ pub enum IRInst {
     Cbw,
     Cwd,
     Cdq,
-    Cqo
+    Cqo,
 }
-
 
 #[derive(Debug, Clone)]
 pub struct Mem {
     pub(crate) base: Option<SimpleOperand>,
     pub(crate) index: Option<Register>,
     pub(crate) scale: u8,
-    pub(crate) displacement: Imm
+    pub(crate) displacement: Imm,
 }
 
 #[macro_export]
@@ -354,31 +557,84 @@ macro_rules! mem {
     };
 }
 
-
 impl Display for Mem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            &Mem { base: Some(ref base), index: None, scale: _, displacement: Imm::Int(0) } => write!(f, "[{}]", base),
-            &Mem { base: None, index: Some(ref index), scale: 1, displacement: Imm::Int(0) } => write!(f, "[{}]", index),
-            &Mem { base: None, index: None, scale: _, ref displacement } => write!(f, "[{}]", displacement),
-            &Mem { base: Some(ref base), index: Some(ref index), scale: 1, displacement: Imm::Int(0)} => write!(f, "[{} + {}]", base, index),
-            &Mem { base: Some(ref base), index: None, scale: _, ref displacement} => write!(f, "[{} + {}]", base, displacement),
-            &Mem { base: None, index: Some(ref index), scale, displacement: Imm::Int(0) } => write!(f, "[{} * {}]", index, scale),
-            &Mem { base: None, index: Some(ref index), scale: 1, ref displacement } => write!(f, "[{} + {}]", index, displacement),
-            &Mem { base: Some(ref base), index: Some(ref index), ref scale, displacement: Imm::Int(0)} => write!(f, "[{} + {} * {}]", base, index, scale),
-            &Mem { base: Some(ref base), index: Some(ref index), scale: 1, ref displacement} => write!(f, "[{} + {} + {}]", base, index, displacement),
-            &Mem { base: None, index: Some(ref index), ref scale, ref displacement} => write!(f, "[{} * {} + {}]", index, scale, displacement),
-            &Mem { base: Some(ref base), index: Some(ref index), ref scale, ref displacement} => write!(f, "[{} + {} * {} + {}]", base, index, scale, displacement),
+            &Mem {
+                base: Some(ref base),
+                index: None,
+                scale: _,
+                displacement: Imm::Int(0),
+            } => write!(f, "[{}]", base),
+            &Mem {
+                base: None,
+                index: Some(ref index),
+                scale: 1,
+                displacement: Imm::Int(0),
+            } => write!(f, "[{}]", index),
+            &Mem {
+                base: None,
+                index: None,
+                scale: _,
+                ref displacement,
+            } => write!(f, "[{}]", displacement),
+            &Mem {
+                base: Some(ref base),
+                index: Some(ref index),
+                scale: 1,
+                displacement: Imm::Int(0),
+            } => write!(f, "[{} + {}]", base, index),
+            &Mem {
+                base: Some(ref base),
+                index: None,
+                scale: _,
+                ref displacement,
+            } => write!(f, "[{} + {}]", base, displacement),
+            &Mem {
+                base: None,
+                index: Some(ref index),
+                scale,
+                displacement: Imm::Int(0),
+            } => write!(f, "[{} * {}]", index, scale),
+            &Mem {
+                base: None,
+                index: Some(ref index),
+                scale: 1,
+                ref displacement,
+            } => write!(f, "[{} + {}]", index, displacement),
+            &Mem {
+                base: Some(ref base),
+                index: Some(ref index),
+                ref scale,
+                displacement: Imm::Int(0),
+            } => write!(f, "[{} + {} * {}]", base, index, scale),
+            &Mem {
+                base: Some(ref base),
+                index: Some(ref index),
+                scale: 1,
+                ref displacement,
+            } => write!(f, "[{} + {} + {}]", base, index, displacement),
+            &Mem {
+                base: None,
+                index: Some(ref index),
+                ref scale,
+                ref displacement,
+            } => write!(f, "[{} * {} + {}]", index, scale, displacement),
+            &Mem {
+                base: Some(ref base),
+                index: Some(ref index),
+                ref scale,
+                ref displacement,
+            } => write!(f, "[{} + {} * {} + {}]", base, index, scale, displacement),
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum Operand {
     Imm(Imm),
     Reg(Register),
-    Mem(Mem)
+    Mem(Mem),
 }
 
 #[derive(Debug, Clone)]
@@ -387,11 +643,10 @@ pub enum SimpleOperand {
     Reg(Register),
 }
 
-
 #[derive(Debug, Clone)]
 pub enum Imm {
     Int(i128),
-    Label(Label)
+    Label(Label),
 }
 
 impl Display for Operand {
@@ -453,7 +708,6 @@ macro_rules! impl_int {
     };
 }
 
-
 impl_int!(i8);
 impl_int!(i16);
 impl_int!(i32);
@@ -502,9 +756,3 @@ impl From<&str> for SimpleOperand {
         SimpleOperand::Imm(Imm::from(value))
     }
 }
-
-
-
-
-
-

@@ -1,6 +1,5 @@
-use std::mem::replace;
 use logos::{Lexer, Logos, Span};
-
+use std::mem::replace;
 
 pub struct PeekableLexer<'a, T: Logos<'a>> {
     lexer: Lexer<'a, T>,
@@ -16,7 +15,13 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
         let peeker1 = lexer.next();
         let span2 = lexer.span();
         let peeker2 = lexer.next();
-        Self { lexer, peeker1, peeker2, span1, span2 }
+        Self {
+            lexer,
+            peeker1,
+            peeker2,
+            span1,
+            span2,
+        }
     }
 
     pub fn next(&mut self) -> Option<Result<T, T::Error>> {
@@ -38,27 +43,16 @@ impl<'a, T: Logos<'a>> PeekableLexer<'a, T> {
     pub fn peek2(&self) -> &Option<Result<T, T::Error>> {
         &self.peeker2
     }
-
 }
-
 
 #[derive(Logos, Debug, PartialEq, Eq, Clone)]
 #[logos(skip r"[ \t\n\f]+")] // Ignore this regex pattern between tokens
 pub enum Token {
-
     #[regex(r"\d+", |lex| lex.slice().parse::<i64>().unwrap())]
     #[regex(r"0[xX][\da-fA-F]+", |lex| i64::from_str_radix(&lex.slice()[2..], 16).unwrap())]
     #[regex(r"0[bB][01]+", |lex| i64::from_str_radix(&lex.slice()[2..], 2).unwrap())]
     #[regex(r"0[oO][0-7]+", |lex| i64::from_str_radix(&lex.slice()[2..], 8).unwrap())]
     Int(i64),
-
-    // #[regex(r"'([^'\\\x00\t\xa0\xd0]|\\x[0-7][\da-fA-F]|\\[\\nrt0]|\\u\{[\da-fA-F]{1,6}\})'", |lex|
-    // {
-    // dbg!(&lex.slice());
-    // lex.slice()[1..lex.span().end - lex.span().start - 1].parse::<char>().unwrap()
-    // }
-    // )]
-    // Char(char),
 
     #[regex(r"'[^'\\\x00\t\xa0\xd0]'", |lex| lex.slice()[1..2].parse::<char>().unwrap())]
     #[token(r"'\n'", |_| '\n')]
@@ -70,7 +64,6 @@ pub enum Token {
     // #[regex(r"'\\u\{[\da-fA-F]{1,6}\}'", |lex| char::from_u32(lex.slice()[3..lex.span().end - lex.span().start - 2].parse::<u32>().unwrap()))]
     Char(char),
     // String(String),
-
     #[token("print")]
     Print,
 
@@ -247,7 +240,5 @@ pub enum Token {
     Return,
 
     #[token("fun")]
-    Function
-
-
+    Function,
 }

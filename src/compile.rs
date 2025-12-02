@@ -8,14 +8,13 @@ pub fn compile(program: TypedProgram, filename: &Path) -> std::io::Result<()> {
     write_s(program, filename)
 }
 
-
 fn write_s(program: TypedProgram, filename: &Path) -> Result<(), std::io::Error> {
     let ir = compile_to_ir(&program);
     let asm = ir_to_asm(ir);
-    let path = format!("./out/{}.s", filename.file_stem().unwrap().to_str().unwrap());
+    let path = format!(
+        "./out/{}.s",
+        filename.file_stem().unwrap().to_str().unwrap()
+    );
     // Write the assembly to disk
     write(path, asm)
 }
-
-
-

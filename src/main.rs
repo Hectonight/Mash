@@ -1,12 +1,12 @@
 #![allow(dead_code)]
+mod compile;
+mod compile_to_ir;
+mod inter_rep;
+mod interp;
+mod ir_asm;
 mod lexer;
 mod parser;
 mod types;
-mod interp;
-mod compile;
-mod inter_rep;
-mod ir_asm;
-mod compile_to_ir;
 
 #[macro_use]
 mod constructors;
