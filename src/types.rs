@@ -14,6 +14,7 @@ Statement =
 | Id Assignment Expr ;
 | while Expr Codeblock [[ ; ]]
 | break ;
+| continue ;
 
 CodeBlock =
 | { Statement* }
@@ -139,13 +140,6 @@ if false { ... } else if ... else if true { s* } else if ... else ... => s*
 if false { ... } else if false { ... } ... else { s* } => s*
 { ...; break n?; ... } => { ...; break n?; }
 { ...; continue; ... } => { ...; continue; }
-while ... { s*; continue; ...;} => while ... { s* }
-while true { s*; break 1; } => s*
-while true { s*; break n; } where n > 1 => s*; break n-1;
-while e { break 1; ... } => e;
-while e { break n; ... } where n > 1 => e; break n-1;
-while e { s*; break 1; } => if e { s* }
-while e { s*; break n; } where n > 1 => if e { s* break n-1 }
 while false { ... } => delete
 
 Be careful on optimizing asm because of flags, to optimize add and others
