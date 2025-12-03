@@ -221,14 +221,14 @@ pub type TypedCodeBlock = Vec<TypedStatement>;
 pub type TypedExpr = (Expr, Type);
 
 // All recursive Expr will be in a box
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
     Datum(Datum),
     Identifier(String),
     Op(Ops),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Ops {
     Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
     Not(Box<Expr>),

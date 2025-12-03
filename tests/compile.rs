@@ -5,6 +5,7 @@ use mash::compile::compile;
 use mash::lexer::{PeekableLexer, Token};
 use mash::parser::parser;
 use mash::type_check::typify;
+use mash::folding::fold;
 use std::path::Path;
 use std::process::Command;
 
@@ -13,7 +14,8 @@ fn runner(s: String, file: &str) -> (String, String, i32) {
     let mut peekable = PeekableLexer::new(lexer);
     let parsed = parser(&mut peekable);
     let typed = typify(parsed.unwrap()).unwrap();
-    compile(typed, Path::new(&format!("/out/{}.s", file))).unwrap();
+    let folded = fold(typed);
+    compile(folded, Path::new(&format!("/out/{}.s", file))).unwrap();
 
     Command::new("make")
         .arg(format!("out/{}", file))

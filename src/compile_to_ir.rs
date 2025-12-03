@@ -1,6 +1,6 @@
 use crate::constructors::{
     add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, idiv,
-    imul2, je, jmp, jne, label, mov, neg, not, or, pop, push, section, shl, shr, sub, test, xor,
+    imul2, je, jmp, jne, label, mov, neg, not, or, pop, push, section, shl, sar, sub, test, xor,
 };
 use crate::inter_rep::IRInst::{Cqo, Ret};
 use crate::inter_rep::Label;
@@ -332,7 +332,19 @@ fn compile_op2(e1: &Expr, e2: &Expr, cenv: &mut CEnv) -> AsmProg {
 
 fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
     match op {
-        Ops::Ternary(_, _, _) => todo!(),
+        Ops::Ternary(c, e1, e2) => {
+            let mut asm = compile_expr(c, cenv);
+            let done = cenv.genlabel("done");
+            let cond_neg = cenv.genlabel("cond_neg");
+            asm.push(test(RAX, RAX));
+            asm.push(je(cond_neg.clone()));
+            asm.append(&mut compile_expr(e1, cenv));
+            asm.push(jmp(done.clone()));
+            asm.push(label(cond_neg));
+            asm.append(&mut compile_expr(e2, cenv));
+            asm.push(label(done));
+            asm
+        },
         Ops::Not(e) => {
             let mut asm = compile_expr(e, cenv);
             asm.push(xor(RAX, 1));
@@ -505,7 +517,7 @@ fn compile_op(op: &Ops, cenv: &mut CEnv) -> AsmProg {
         }
         Ops::BitShiftRight(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![mov(RCX, RAX), pop(RAX), shr(RAX, CL)]);
+            asm.append(&mut vec![mov(RCX, RAX), pop(RAX), sar(RAX, CL)]);
             cenv.decrement_stack(1);
             asm
         }

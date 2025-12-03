@@ -163,3 +163,36 @@ make_op!(pop, Pop);
 make_op!(push, Push);
 make_op!(inc, Inc);
 make_op!(dec, Dec);
+
+
+#[macro_export]
+macro_rules! int {
+    ($d:literal) => { $crate::types::Expr::Datum($crate::types::Datum::Int($d)) };
+    (_) => { $crate::types::Expr::Datum($crate::types::Datum::Int(_)) };
+    ($id:ident) => { $crate::types::Expr::Datum($crate::types::Datum::Int($id)) };
+    ($e:expr) => { $crate::types::Expr::Datum($crate::types::Datum::Int($e)) };
+}
+
+#[macro_export]
+macro_rules! datum {
+    (_) => { $crate::types::Expr::Datum(_) };
+    ($d:ident) => { $crate::types::Expr::Datum($d) };
+    ($d:expr) => { $crate::types::Expr::Datum($d) };
+}
+
+#[macro_export]
+macro_rules! bool {
+    (true) => { $crate::types::Expr::Datum($crate::types::Datum::Bool(true)) };
+    (false) => { $crate::types::Expr::Datum($crate::types::Datum::Bool(false)) };
+    (_) => { $crate::types::Expr::Datum($crate::types::Datum::Bool(_)) };
+    ($id:ident) => { $crate::types::Expr::Datum($crate::types::Datum::Bool($id)) };
+    ($e:expr) => { $crate::types::Expr::Datum($crate::types::Datum::Bool($e)) };
+}
+
+#[macro_export]
+macro_rules! ident {
+    (_) => { $crate::types::Expr::Identifier(_) };
+    ($id:ident) => { $crate::types::Expr::Identifier($id) };
+    ($e:expr) => { $crate::types::Expr::Identifier($e) }
+}
+
