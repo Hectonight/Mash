@@ -1,6 +1,6 @@
 use crate::lexer::{PeekableLexer, Token};
 use crate::types::Statement::Assignment;
-use crate::types::{Datum, Expr, Ops, Program, Statement};
+use crate::types::{BuiltIn, Datum, Expr, Ops, Program, Statement};
 use std::ops::Range;
 
 type ParseResult<T> = Result<T, (String, Range<usize>)>;
@@ -272,7 +272,41 @@ fn parse_statement_expr(lexer: &mut PeekableLexer<Token>) -> ParseResult<Stateme
 
 fn parse_expr(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
     parse_ternary(lexer)
+    // match (lexer.peek(), lexer.peek2()) {
+    //     (Some(Ok(Token::Identifier(_))), Some(Ok(Token::LParen))) => parse_builtin(lexer),
+    //     _ => parse_ternary(lexer)
+    // }
 }
+
+fn parse_builtin(ident: String, lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
+        assert_token(lexer, Token::LParen, "(")?;
+
+        let builtin = match ident.as_str() {
+            "abs" => BuiltIn::Abs,
+            "max" => BuiltIn::Max,
+            "min" => BuiltIn::Min,
+            "sgn" => BuiltIn::Sgn,
+            _ => return Err(("Unknown Function Name".to_string(), lexer.span()))
+        };
+
+        let mut params = Vec::new();
+
+        if let Some(Ok(Token::RParen)) = lexer.peek() {
+            lexer.next();
+            return Ok(Expr::BuiltIn(builtin, params));
+        }
+
+        params.push(parse_expr(lexer)?);
+
+        while let Some(Ok(Token::Comma)) = lexer.peek() {
+            lexer.next();
+            params.push(parse_expr(lexer)?);
+        }
+        assert_token(lexer, Token::RParen, ")")?;
+
+        Ok(Expr::BuiltIn(builtin, params))
+}
+
 
 fn parse_ternary(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
     let mut lhs = parse_or(lexer)?;
@@ -434,20 +468,21 @@ fn parse_prefix(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
 }
 
 fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<Expr> {
-    match lexer.next() {
-        Some(Ok(Token::LParen)) => {
+    match (lexer.next(), lexer.peek()) {
+        (Some(Ok(Token::LParen)), _) => {
             let expr = parse_expr(lexer)?;
             assert_token(lexer, Token::RParen, ")")?;
             Ok(expr)
         }
-        Some(Ok(Token::Identifier(x))) => Ok(Expr::Identifier(x)),
-        Some(Ok(Token::Int(x))) => Ok(Expr::Datum(Datum::Int(x))),
-        Some(Ok(Token::Bool(x))) => Ok(Expr::Datum(Datum::Bool(x))),
-        Some(Ok(Token::Char(x))) => Ok(Expr::Datum(Datum::Char(x))),
-        Some(Ok(Token::Null)) => Ok(Expr::Datum(Datum::Null)),
-        None => unexpected_eof(lexer),
-        Some(Err(_)) => unrecognized_token(lexer),
-        Some(Ok(t)) => unexpected_token(lexer, t),
+        (Some(Ok(Token::Identifier(f))), Some(Ok(Token::LParen))) => parse_builtin(f, lexer),
+        (Some(Ok(Token::Identifier(x))), _) => Ok(Expr::Identifier(x)),
+        (Some(Ok(Token::Int(x))), _) => Ok(Expr::Datum(Datum::Int(x))),
+        (Some(Ok(Token::Bool(x))), _) => Ok(Expr::Datum(Datum::Bool(x))),
+        (Some(Ok(Token::Char(x))), _) => Ok(Expr::Datum(Datum::Char(x))),
+        (Some(Ok(Token::Null)), _) => Ok(Expr::Datum(Datum::Null)),
+        (None, _) => unexpected_eof(lexer),
+        (Some(Err(_)), _) => unrecognized_token(lexer),
+        (Some(Ok(t)), _) => unexpected_token(lexer, t),
     }
 }
 

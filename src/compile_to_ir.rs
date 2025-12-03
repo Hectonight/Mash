@@ -1,7 +1,4 @@
-use crate::constructors::{
-    add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, idiv,
-    imul2, je, jmp, jne, label, mov, neg, not, or, pop, push, section, shl, sar, sub, test, xor,
-};
+use crate::constructors::{add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, idiv, imul2, je, jmp, jne, label, mov, neg, not, or, pop, push, section, shl, sar, sub, test, xor, jge, jg};
 use crate::inter_rep::IRInst::{Cqo, Ret};
 use crate::inter_rep::Label;
 use crate::inter_rep::R8::CL;
@@ -9,10 +6,7 @@ use crate::inter_rep::R32::{EAX, EDI};
 use crate::inter_rep::R64::{R8, R15, RAX, RCX, RDI, RDX, RSP};
 use crate::inter_rep::{AsmProg, Mem};
 use crate::mem;
-use crate::types::{
-    Datum, Expr, Ops, Type, TypedCodeBlock as CodeBlock, TypedProgram as Program,
-    TypedStatement as Statement, TypedStatement,
-};
+use crate::types::{BuiltIn, Datum, Expr, Ops, Type, TypedCodeBlock as CodeBlock, TypedProgram as Program, TypedStatement as Statement, TypedStatement};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -315,7 +309,71 @@ fn compile_expr(expr: &Expr, cenv: &mut CEnv) -> AsmProg {
         Expr::Datum(d) => compile_datum(d),
         Expr::Identifier(s) => compile_ident(s, cenv),
         Expr::Op(op) => compile_op(op, cenv),
+        Expr::BuiltIn(f, p) => compile_builtin(f, p, cenv),
     }
+}
+
+fn compile_builtin(builtin: &BuiltIn, params: &Vec<Expr>, cenv: &mut CEnv) -> AsmProg {
+    let mut asm = if params.len() > 0 {
+        let mut s: Vec<_> = params[..params.len() - 1].iter().flat_map(|p|
+            {
+                let mut v = compile_expr(p, cenv);
+                v.push(push(RAX));
+                v
+            }
+        ).collect();
+        s.append(&mut compile_expr(&params[params.len() - 1], cenv));
+        s
+    } else {
+        vec![]
+    };
+
+    match builtin {
+        BuiltIn::Abs => {
+            let skip = cenv.genlabel("skip");
+            asm.append( &mut vec![
+                cmp(RAX, 0),
+                jge(skip.clone()),
+                neg(RAX),
+                label(skip)
+            ])
+        }
+        BuiltIn::Max => {
+            for _ in 0..params.len()-1 {
+                asm.append(&mut vec![
+                    pop(RDI),
+                    cmp(RDI, RAX),
+                    cmovg(RAX, RDI)
+                ])
+            }
+        }
+        BuiltIn::Min => {
+            for _ in 0..params.len()-1 {
+                asm.append(&mut vec![
+                    pop(RDI),
+                    cmp(RDI, RAX),
+                    cmovl(RAX, RDI)
+                ])
+            }
+        }
+        BuiltIn::Sgn => {
+            let pos = cenv.genlabel("pos");
+            let done = cenv.genlabel("done");
+            asm.append(&mut vec![
+                cmp(RAX, 0),
+                jg(pos.clone()),
+                je(done.clone()),
+                mov(RAX, -1),
+                jmp(done.clone()),
+                label(pos),
+                mov(RAX, 1),
+                label(done)
+            ])
+        }
+    }
+
+
+    asm
 }
 
 fn compile_ident(s: &String, cenv: &CEnv) -> AsmProg {

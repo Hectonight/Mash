@@ -97,8 +97,7 @@ fn interp_statement<W1: Write, W2: Write>(
         Statement::Let(s, (e, _)) => interp_let(s, e, env),
         Statement::Assignment(s, (e, _)) => interp_assignment(s, e, env),
         Statement::While((e, _), cb) => interp_while(e, cb, env),
-        Statement::Break(_) => todo!(),
-        Statement::Continue => todo!(),
+        _ => unimplemented!(),
     }
 }
 
@@ -182,6 +181,7 @@ fn interp_expr<W1: Write, W2: Write>(expr: &Expr, env: &Environment<W1, W2>) -> 
             }
         }
         Expr::Op(op) => interp_ops(op, env),
+        _ => unimplemented!()
     }
 }
 

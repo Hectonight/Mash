@@ -102,6 +102,7 @@ AfterOps =
 | ( Expr )
 | Datum
 | Id
+| BuiltIn ( [[ Expr, ]]* [[ Expr [[,]] ]] )
 
 
 
@@ -220,12 +221,27 @@ pub type CodeBlock = Vec<Statement>;
 pub type TypedCodeBlock = Vec<TypedStatement>;
 pub type TypedExpr = (Expr, Type);
 
-// All recursive Expr will be in a box
+// All recursive Expr will be in a box/vec
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
     Datum(Datum),
     Identifier(String),
     Op(Ops),
+    BuiltIn(BuiltIn, Vec<Expr>),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum BuiltIn {
+    Abs,
+    Max,
+    Min,
+    Sgn,
+}
+
+impl Display for BuiltIn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

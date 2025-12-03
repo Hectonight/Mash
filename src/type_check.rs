@@ -1,8 +1,7 @@
-use crate::types::{
-    CodeBlock, Datum, Expr, Ops, Program, Statement, Type, TypedCodeBlock, TypedExpr, TypedProgram,
-    TypedStatement,
-};
+use crate::types::{BuiltIn, CodeBlock, Datum, Expr, Ops, Program, Statement, Type, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement};
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::ops::RangeBounds;
 
 struct TEnv {
     environment: Vec<HashMap<String, Type>>,
@@ -146,6 +145,49 @@ fn expr_type(expr: &Expr, tenv: &TEnv) -> Result<Type, String> {
             None => Err(format!("Unknown identifier {}", id)),
         },
         Expr::Op(op) => op_type(op, tenv),
+        Expr::BuiltIn(f, p) => builtin_type(f, p, tenv)
+    }
+}
+
+fn arity_error(builtin: &BuiltIn, expected: usize, found: usize) -> Result<Type, String> {
+    Err(format!("{} expected {} parameter. Found {}", builtin, expected, found))
+}
+
+fn arity_range_error<R: RangeBounds<usize> + Debug>(builtin: &BuiltIn, expected: R, found: usize) -> Result<Type, String> {
+    Err(format!("{} expected {:?} parameter. Found {}", builtin, expected, found))
+}
+
+fn assert_type_builtin(builtin: &BuiltIn, expected: Type, actual: Type) -> Result<(), String> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(format!("{} expected {}. Found {}", builtin, expected, actual))
+    }
+}
+
+fn builtin_type(builtin: &BuiltIn, params: &Vec<Expr>, tenv: &TEnv) -> Result<Type, String> {
+    match builtin {
+        BuiltIn::Abs | BuiltIn::Sgn => {
+            if params.len() != 1 {
+                arity_error(builtin, 1, params.len())
+            } else {
+                let t = expr_type(&params[0], tenv)?;
+                assert_type_builtin(builtin, t, Type::Int)?;
+                Ok(Type::Int)
+            }
+        }
+
+        BuiltIn::Max | BuiltIn::Min => {
+            if params.len() == 0 {
+                arity_range_error(builtin, 1.., 0)
+            } else {
+                for param in params {
+                    let t = expr_type(&param, tenv)?;
+                    assert_type_builtin(builtin, Type::Int, t)?;
+                }
+                Ok(Type::Int)
+            }
+        }
     }
 }
 
