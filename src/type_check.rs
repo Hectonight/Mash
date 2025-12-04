@@ -2,6 +2,7 @@ use crate::types::{
     BuiltIn, Datum, Expr, Program, Type, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram,
     TypedStatement, UntypedCodeBlock, UntypedExpr, UntypedOps, UntypedStatement,
 };
+use crate::op;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
@@ -254,64 +255,49 @@ fn op_type(ops: UntypedOps, tenv: &TEnv) -> Result<TypedExpr, String> {
                 expr: Expr::Op(TypedOps::Ternary(Box::new(c), Box::new(e1), Box::new(e2))),
             })
         }
-        UntypedOps::Not(v) => Ok(assert_expr_type(*v, Type::Bool, "not".to_string(), tenv)?),
-        UntypedOps::BitNot(v) => Ok(assert_expr_type(
+        UntypedOps::Not(v) => assert_expr_type(*v, Type::Bool, "not".to_string(), tenv),
+        UntypedOps::BitNot(v) => assert_expr_type(
             *v,
             Type::Int,
             "bitwise not".to_string(),
             tenv,
-        )?),
-        UntypedOps::Neg(v) => Ok(assert_expr_type(
+        ),
+        UntypedOps::Neg(v) => assert_expr_type(
             *v,
             Type::Int,
             "negation".to_string(),
             tenv,
-        )?),
+        ),
         UntypedOps::Pos(v) => assert_expr_type(*v, Type::Int, "pos".to_string(), tenv),
         UntypedOps::Plus(a, b) => {
             let s = "addition".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::Plus(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, Plus, e1, e2))
         }
         UntypedOps::Minus(a, b) => {
             let s = "subtraction".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::Minus(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, Minus, e1, e2))
         }
         UntypedOps::Mul(a, b) => {
             let s = "multiplication".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::Mul(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, Mul, e1, e2))
         }
         UntypedOps::Div(a, b) => {
             let s = "division".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::Div(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, Div, e1, e2))
         }
         UntypedOps::Mod(a, b) => {
             let s = "modulo".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::Mod(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, Mod, e1, e2))
         }
         UntypedOps::Eq(a, b) => {
             let e1 = typify_expr(*a, tenv)?;
@@ -322,10 +308,7 @@ fn op_type(ops: UntypedOps, tenv: &TEnv) -> Result<TypedExpr, String> {
                     e1.typ, e2.typ
                 ));
             }
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Eq(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Eq, e1, e2))
         }
         UntypedOps::Neq(a, b) => {
             let e1 = typify_expr(*a, tenv)?;
@@ -336,109 +319,73 @@ fn op_type(ops: UntypedOps, tenv: &TEnv) -> Result<TypedExpr, String> {
                     e1.typ, e2.typ
                 ));
             }
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Neq(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Neq, e1, e2))
         }
         UntypedOps::Lt(a, b) => {
             let s = "less than".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Lt(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Lt, e1, e2))
         }
         UntypedOps::Leq(a, b) => {
             let s = "less than or equal to".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Leq(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Leq, e1, e2))
         }
         UntypedOps::Gt(a, b) => {
             let s = "greater than".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Gt(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Gt, e1, e2))
         }
         UntypedOps::Geq(a, b) => {
             let s = "greater than or equal to".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Geq(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Geq, e1, e2))
         }
         UntypedOps::And(a, b) => {
             let s = "and".to_string();
             let e1 = assert_expr_type(*a, Type::Bool, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Bool, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::And(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, And, e1, e2))
         }
         UntypedOps::Or(a, b) => {
             let s = "or".to_string();
             let e1 = assert_expr_type(*a, Type::Bool, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Bool, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Bool,
-                expr: Expr::Op(TypedOps::Or(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Bool, Or, e1, e2))
         }
         UntypedOps::BitAnd(a, b) => {
             let s = "bitwise and".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::BitAnd(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, BitAnd, e1, e2))
         }
         UntypedOps::BitOr(a, b) => {
             let s = "bitwise or".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::BitOr(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, BitOr, e1, e2))
         }
         UntypedOps::BitXor(a, b) => {
             let s = "bitwise xor".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::BitXor(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, BitXor, e1, e2))
         }
         UntypedOps::BitShiftLeft(a, b) => {
             let s = "bit shift left".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::BitShiftLeft(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, BitShiftLeft, e1, e2))
         }
         UntypedOps::BitShiftRight(a, b) => {
             let s = "bit shift right".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
             let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
-            Ok(TypedExpr {
-                typ: Type::Int,
-                expr: Expr::Op(TypedOps::BitShiftRight(Box::new(e1), Box::new(e2))),
-            })
+            Ok(op!(Int, BitShiftRight, e1, e2))
         }
     }
 }

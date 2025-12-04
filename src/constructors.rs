@@ -311,4 +311,15 @@ macro_rules! match_op {
             ),
         }
     };
+
+    ($p:pat, $op:ident $(, $e:ident)+ $(,)?) => {
+        $crate::types::TypedExpr {
+            typ: $p,
+            expr: $crate::types::Expr::Op(
+                $crate::types::TypedOps::$op(
+                    $( $e, )+
+                )
+            ),
+        }
+    };
 }
