@@ -216,7 +216,7 @@ pub enum Type {
     Int,
     Bool,
     Char,
-    Null,
+    Unit,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -267,7 +267,7 @@ pub enum Datum {
     Int(i64),
     Bool(bool),
     Char(char),
-    Null,
+    Unit
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -275,7 +275,7 @@ pub enum Value {
     Int(i64),
     Bool(bool),
     Char(char),
-    Null,
+    Unit,
 }
 
 pub(crate) type ResultValue = Result<Value, String>;
@@ -289,8 +289,8 @@ impl Display for Type {
             match self {
                 Type::Int => "int",
                 Type::Bool => "bool",
-                Type::Null => "null",
                 Type::Char => "char",
+                Type::Unit => "unit",
             }
         )
     }

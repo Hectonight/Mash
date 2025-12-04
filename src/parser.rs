@@ -490,6 +490,7 @@ fn parse_prefix(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedExpr> {
 
 fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedExpr> {
     match (lexer.next(), lexer.peek()) {
+        (Some(Ok(Token::LParen)), Some(Ok(Token::RParen))) => { lexer. next(); Ok(UntypedExpr(Expr::Datum(Datum::Unit))) },
         (Some(Ok(Token::LParen)), _) => {
             let expr = parse_expr(lexer)?;
             assert_token(lexer, Token::RParen, ")")?;
@@ -500,7 +501,6 @@ fn after_ops(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedExpr> {
         (Some(Ok(Token::Int(x))), _) => Ok(UntypedExpr(Expr::Datum(Datum::Int(x)))),
         (Some(Ok(Token::Bool(x))), _) => Ok(UntypedExpr(Expr::Datum(Datum::Bool(x)))),
         (Some(Ok(Token::Char(x))), _) => Ok(UntypedExpr(Expr::Datum(Datum::Char(x)))),
-        (Some(Ok(Token::Null)), _) => Ok(UntypedExpr(Expr::Datum(Datum::Null))),
         (None, _) => unexpected_eof(lexer),
         (Some(Err(_)), _) => unrecognized_token(lexer),
         (Some(Ok(t)), _) => unexpected_token(lexer, t),

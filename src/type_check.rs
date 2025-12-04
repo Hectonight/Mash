@@ -234,7 +234,7 @@ fn datum_type(datum: &Datum) -> Type {
         Datum::Int(_) => Type::Int,
         Datum::Bool(_) => Type::Bool,
         Datum::Char(_) => Type::Char,
-        Datum::Null => Type::Null,
+        Datum::Unit => Type::Unit,
     }
 }
 

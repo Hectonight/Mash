@@ -167,7 +167,7 @@ fn printer<W1: Write, W2: Write>(value: &Value, env: &mut Environment<W1, W2>) -
         Value::Int(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),
         Value::Bool(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),
         Value::Char(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),
-        Value::Null => writeln!(env.out, "null").map_err(|e| e.to_string()),
+        Value::Unit => writeln!(env.out, "()").map_err(|e| e.to_string()),
     }
 }
 
@@ -222,6 +222,6 @@ fn interp_datum(dat: &Datum) -> Value {
         Datum::Int(x) => Value::Int(*x),
         Datum::Bool(x) => Value::Bool(*x),
         Datum::Char(x) => Value::Char(*x),
-        Datum::Null => Value::Null,
+        Datum::Unit => Value::Unit,
     }
 }

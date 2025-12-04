@@ -67,8 +67,6 @@ pub enum Token {
     #[token("print")]
     Print,
 
-    #[token("null")]
-    Null,
 
     #[token("false", |_| false)]
     #[token("true", |_| true)]

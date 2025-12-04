@@ -1,8 +1,8 @@
 use crate::constructors::{add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, idiv, imul2, je, jg, jge, jmp, jne, label, mov, neg, not, or, pop, push, sar, section, shl, sub, test, xor};
-use crate::inter_rep::IRInst::{Cqo, Ret};
+use crate::inter_rep::IRInst::{Cqo, Ret, Syscall};
 use crate::inter_rep::Label;
 use crate::inter_rep::R32::{EAX, EDI};
-use crate::inter_rep::R64::{R15, R8, RAX, RCX, RDI, RDX, RSP};
+use crate::inter_rep::R64::{R15, R8, RAX, RCX, RDI, RDX, RSI, RSP};
 use crate::inter_rep::R8::CL;
 use crate::inter_rep::{AsmProg, Mem};
 use crate::mem;
@@ -237,7 +237,7 @@ fn compile_print(e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
         Type::Int => compile_print_int(e, cenv),
         Type::Bool => compile_print_bool(e, cenv),
         Type::Char => compile_print_char(e, cenv),
-        Type::Null => compile_print_null(),
+        Type::Unit => compile_print_unit(),
     }
 }
 
@@ -275,16 +275,15 @@ fn compile_print_bool(e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
     asm
 }
 
-fn compile_print_null() -> AsmProg {
+fn compile_print_unit() -> AsmProg {
     vec![
-        push(R15),
-        mov(R15, RSP),
-        and(R15, 0b1000),
-        sub(RSP, R15),
-        external("print_null"),
-        call("print_null"),
-        add(RSP, R15),
-        pop(R15),
+        mov(RAX,1),
+        mov(RDI, RAX),
+        push(0xA2928),
+        mov(RSI, RSP),
+        mov(RDX,3),
+        Syscall,
+        add(RSP, 8)
     ]
 }
 
@@ -587,6 +586,6 @@ fn compile_datum(datum: &Datum) -> AsmProg {
         Datum::Int(i) => vec![mov(RAX, *i)],
         Datum::Bool(b) => vec![mov(EAX, if *b { 1 } else { 0 })],
         Datum::Char(c) => vec![mov(RAX, *c as i128)],
-        Datum::Null => vec![],
+        Datum::Unit => vec![],
     }
 }
