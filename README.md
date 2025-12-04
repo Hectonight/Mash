@@ -22,7 +22,5 @@ Please see:
 - [compile_to_ir](src/compile_to_ir.rs)
 
 ## Todo
-- Replace null type with unit
-- Remove let statement(?)
-- Allow shadowing(?)
 - Make print a function instead of a keyword
+- Add lists
