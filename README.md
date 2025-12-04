@@ -14,10 +14,15 @@
 Please see:
 - [parser.rs](src/parser.rs)
 - [types.rs](src/types.rs)
-- [interp.rs](src/interp.rs)
 - [ir_asm.rs](src/ir_asm.rs)
 - [inter_rep.rs](src/inter_rep.rs)
 - [constructors.rs](src/constructors.rs)
 - [lexer.rs](src/lexer.rs)
 - [type_check.rs](src/type_check.rs)
 - [compile_to_ir](src/compile_to_ir.rs)
+
+## Todo
+- Replace null type with unit
+- Remove let statement(?)
+- Allow shadowing(?)
+- Make print a function instead of a keyword
