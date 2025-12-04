@@ -1,4 +1,7 @@
-use crate::types::{BuiltIn, CodeBlock, Datum, Expr, Ops, Program, Statement, Type, TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement};
+use crate::types::{
+    BuiltIn, Datum, Expr, Program, Type, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram,
+    TypedStatement, UntypedCodeBlock, UntypedExpr, UntypedOps, UntypedStatement,
+};
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
@@ -51,7 +54,10 @@ pub fn typify(program: Program) -> Result<TypedProgram, String> {
         .collect()
 }
 
-fn typify_codeblock(codeblock: CodeBlock, tenv: &mut TEnv) -> Result<TypedCodeBlock, String> {
+fn typify_codeblock(
+    codeblock: UntypedCodeBlock,
+    tenv: &mut TEnv,
+) -> Result<TypedCodeBlock, String> {
     tenv.new_environment();
     let tcb = codeblock
         .into_iter()
@@ -61,19 +67,22 @@ fn typify_codeblock(codeblock: CodeBlock, tenv: &mut TEnv) -> Result<TypedCodeBl
     tcb
 }
 
-fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatement, String> {
+fn typify_statement(
+    statement: UntypedStatement,
+    tenv: &mut TEnv,
+) -> Result<TypedStatement, String> {
     match statement {
-        Statement::Expr(e) => Ok(TypedStatement::Expr(typify_expr(e, tenv)?)),
-        Statement::If(e, cb, elifs, eb) => {
+        UntypedStatement::Expr(e) => Ok(TypedStatement::Expr(typify_expr(e, tenv)?)),
+        UntypedStatement::If(e, cb, elifs, eb) => {
             let s = "conditional if".to_owned();
             Ok(TypedStatement::If(
-                assert_typify_expr(e, Type::Bool, s.clone(), tenv)?,
+                assert_expr_type(e, Type::Bool, s.clone(), tenv)?,
                 typify_codeblock(cb, tenv)?,
                 elifs
                     .into_iter()
                     .map(|(ex, tcb)| {
                         Ok((
-                            assert_typify_expr(ex, Type::Bool, s.clone(), tenv)?,
+                            assert_expr_type(ex, Type::Bool, s.clone(), tenv)?,
                             typify_codeblock(tcb, tenv)?,
                         ))
                     })
@@ -84,40 +93,40 @@ fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatem
                 },
             ))
         }
-        Statement::Print(e) => Ok(TypedStatement::Print(typify_expr(e, tenv)?)),
-        Statement::Let(id, e) => {
-            let (ex, t) = typify_expr(e, tenv)?;
+        UntypedStatement::Print(e) => Ok(TypedStatement::Print(typify_expr(e, tenv)?)),
+        UntypedStatement::Let(id, e) => {
+            let ex = typify_expr(e, tenv)?;
             if tenv.member(&id) {
                 return Err(format!("{} defined multiple times", id));
             }
-            tenv.insert(id.clone(), t);
-            Ok(TypedStatement::Let(id.clone(), (ex, t)))
+            tenv.insert(id.clone(), ex.typ);
+            Ok(TypedStatement::Let(id.clone(), ex))
         }
-        Statement::Assignment(id, e) => {
-            let (ex, tright) = typify_expr(e, tenv)?;
+        UntypedStatement::Assignment(id, e) => {
+            let right = typify_expr(e, tenv)?;
             let tleft = tenv.lookup(&id).ok_or(format!("{} is not defined", id))?;
-            if *tleft != tright {
+            if *tleft != right.typ {
                 Err(format!(
                     "Assignment type mismatch {} and {}",
-                    *tleft, tright
+                    *tleft, right.typ
                 ))
             } else {
-                Ok(TypedStatement::Assignment(id, (ex, tright)))
+                Ok(TypedStatement::Assignment(id, right))
             }
         }
-        Statement::While(e, cb) => {
+        UntypedStatement::While(e, cb) => {
             tenv.control_flow += 1;
-            let (ex, t) = typify_expr(e, tenv)?;
-            if t != Type::Bool {
-                Err(format!("While type mismatch, found {} expected bool", t))
-            } else {
-                Ok(TypedStatement::While(
-                    (ex, Type::Bool),
-                    typify_codeblock(cb, tenv)?,
+            let ex = typify_expr(e, tenv)?;
+            if ex.typ != Type::Bool {
+                Err(format!(
+                    "While type mismatch, found {} expected bool",
+                    ex.typ
                 ))
+            } else {
+                Ok(TypedStatement::While(ex, typify_codeblock(cb, tenv)?))
             }
         }
-        Statement::Break(n) => {
+        UntypedStatement::Break(n) => {
             if tenv.control_flow >= n {
                 tenv.control_flow -= n;
                 Ok(TypedStatement::Break(n))
@@ -128,64 +137,92 @@ fn typify_statement(statement: Statement, tenv: &mut TEnv) -> Result<TypedStatem
                 ))
             }
         }
-        Statement::Continue => Ok(TypedStatement::Continue),
+        UntypedStatement::Continue => Ok(TypedStatement::Continue),
     }
 }
 
-fn typify_expr(expr: Expr, tenv: &TEnv) -> Result<TypedExpr, String> {
-    let t = expr_type(&expr, tenv)?;
-    Ok((expr, t))
-}
-
-fn expr_type(expr: &Expr, tenv: &TEnv) -> Result<Type, String> {
-    match expr {
-        Expr::Datum(d) => Ok(datum_type(&d)),
+fn typify_expr(expr: UntypedExpr, tenv: &TEnv) -> Result<TypedExpr, String> {
+    match expr.0 {
+        Expr::Datum(d) => Ok(TypedExpr {
+            typ: datum_type(&d),
+            expr: Expr::Datum(d),
+        }),
         Expr::Identifier(id) => match tenv.lookup(&id) {
-            Some(t) => Ok(*t),
+            Some(t) => Ok(TypedExpr {
+                typ: *t,
+                expr: Expr::Identifier(id),
+            }),
             None => Err(format!("Unknown identifier {}", id)),
         },
         Expr::Op(op) => op_type(op, tenv),
-        Expr::BuiltIn(f, p) => builtin_type(f, p, tenv)
+        Expr::BuiltIn(f, p) => builtin_type(f, p, tenv),
     }
 }
 
-fn arity_error(builtin: &BuiltIn, expected: usize, found: usize) -> Result<Type, String> {
-    Err(format!("{} expected {} parameter. Found {}", builtin, expected, found))
+fn arity_error(builtin: &BuiltIn, expected: usize, found: usize) -> Result<TypedExpr, String> {
+    Err(format!(
+        "{} expected {} parameter. Found {}",
+        builtin, expected, found
+    ))
 }
 
-fn arity_range_error<R: RangeBounds<usize> + Debug>(builtin: &BuiltIn, expected: R, found: usize) -> Result<Type, String> {
-    Err(format!("{} expected {:?} parameter. Found {}", builtin, expected, found))
+fn arity_range_error<R: RangeBounds<usize> + Debug>(
+    builtin: &BuiltIn,
+    expected: R,
+    found: usize,
+) -> Result<TypedExpr, String> {
+    Err(format!(
+        "{} expected {:?} parameter. Found {}",
+        builtin, expected, found
+    ))
 }
 
 fn assert_type_builtin(builtin: &BuiltIn, expected: Type, actual: Type) -> Result<(), String> {
     if expected == actual {
         Ok(())
     } else {
-        Err(format!("{} expected {}. Found {}", builtin, expected, actual))
+        Err(format!(
+            "{} expected {}. Found {}",
+            builtin, expected, actual
+        ))
     }
 }
 
-fn builtin_type(builtin: &BuiltIn, params: &Vec<Expr>, tenv: &TEnv) -> Result<Type, String> {
+fn builtin_type(
+    builtin: BuiltIn,
+    mut params: Vec<UntypedExpr>,
+    tenv: &TEnv,
+) -> Result<TypedExpr, String> {
     match builtin {
         BuiltIn::Abs | BuiltIn::Sgn => {
             if params.len() != 1 {
-                arity_error(builtin, 1, params.len())
+                arity_error(&builtin, 1, params.len())
             } else {
-                let t = expr_type(&params[0], tenv)?;
-                assert_type_builtin(builtin, t, Type::Int)?;
-                Ok(Type::Int)
+                let e = typify_expr(params.pop().unwrap(), tenv)?;
+                assert_type_builtin(&builtin, Type::Int, e.typ)?;
+                Ok(TypedExpr {
+                    typ: Type::Int,
+                    expr: Expr::BuiltIn(builtin, vec![e]),
+                })
             }
         }
 
         BuiltIn::Max | BuiltIn::Min => {
             if params.len() == 0 {
-                arity_range_error(builtin, 1.., 0)
+                arity_range_error(&builtin, 1.., 0)
             } else {
-                for param in params {
-                    let t = expr_type(&param, tenv)?;
-                    assert_type_builtin(builtin, Type::Int, t)?;
-                }
-                Ok(Type::Int)
+                let tparams = params
+                    .into_iter()
+                    .map(|p| {
+                        let e = typify_expr(p, tenv)?;
+                        assert_type_builtin(&builtin, Type::Int, e.typ)?;
+                        Ok::<TypedExpr, String>(e)
+                    })
+                    .collect::<Result<Vec<_>, String>>()?;
+                Ok(TypedExpr {
+                    typ: Type::Int,
+                    expr: Expr::BuiltIn(builtin, tparams),
+                })
             }
         }
     }
@@ -200,162 +237,224 @@ fn datum_type(datum: &Datum) -> Type {
     }
 }
 
-fn op_type(ops: &Ops, tenv: &TEnv) -> Result<Type, String> {
+fn op_type(ops: UntypedOps, tenv: &TEnv) -> Result<TypedExpr, String> {
     match ops {
-        Ops::Ternary(cond, a, b) => {
-            assert_expr_type(cond, Type::Bool, "ternary".to_string(), tenv)?;
-            let t1 = expr_type(a, tenv)?;
-            let t2 = expr_type(b, tenv)?;
-            if t1 != t2 {
+        UntypedOps::Ternary(cond, a, b) => {
+            let c = assert_expr_type(*cond, Type::Bool, "ternary".to_string(), tenv)?;
+            let e1 = typify_expr(*a, tenv)?;
+            let e2 = typify_expr(*b, tenv)?;
+            if e1.typ != e2.typ {
                 return Err(format!(
                     "Both sides of the result of a ternary expression must have the same type. Found {} and {}.",
-                    t1, t2
+                    e1.typ, e2.typ
                 ));
             }
-            Ok(t1)
+            Ok(TypedExpr {
+                typ: e1.typ,
+                expr: Expr::Op(TypedOps::Ternary(Box::new(c), Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Not(v) => Ok(assert_expr_type(v, Type::Bool, "not".to_string(), tenv)?),
-        Ops::BitNot(v) => Ok(assert_expr_type(
-            v,
+        UntypedOps::Not(v) => Ok(assert_expr_type(*v, Type::Bool, "not".to_string(), tenv)?),
+        UntypedOps::BitNot(v) => Ok(assert_expr_type(
+            *v,
             Type::Int,
             "bitwise not".to_string(),
             tenv,
         )?),
-        Ops::Neg(v) => Ok(assert_expr_type(
-            v,
+        UntypedOps::Neg(v) => Ok(assert_expr_type(
+            *v,
             Type::Int,
             "negation".to_string(),
             tenv,
         )?),
-        Ops::Pos(v) => Ok(assert_expr_type(v, Type::Int, "pos".to_string(), tenv)?),
-        Ops::Plus(a, b) => {
+        UntypedOps::Pos(v) => assert_expr_type(*v, Type::Int, "pos".to_string(), tenv),
+        UntypedOps::Plus(a, b) => {
             let s = "addition".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::Plus(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Minus(a, b) => {
+        UntypedOps::Minus(a, b) => {
             let s = "subtraction".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::Minus(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Mul(a, b) => {
+        UntypedOps::Mul(a, b) => {
             let s = "multiplication".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::Mul(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Div(a, b) => {
+        UntypedOps::Div(a, b) => {
             let s = "division".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::Div(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Mod(a, b) => {
+        UntypedOps::Mod(a, b) => {
             let s = "modulo".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::Mod(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Eq(a, b) => {
-            let t1 = expr_type(a, tenv)?;
-            let t2 = expr_type(b, tenv)?;
-            if t1 != t2 {
+        UntypedOps::Eq(a, b) => {
+            let e1 = typify_expr(*a, tenv)?;
+            let e2 = typify_expr(*b, tenv)?;
+            if e1.typ != e2.typ {
                 return Err(format!(
                     "Both sides of an equal expression must have the same type. Found {} and {}.",
-                    t1, t2
+                    e1.typ, e2.typ
                 ));
             }
-            Ok(Type::Bool)
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Eq(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Neq(a, b) => {
-            let t1 = expr_type(a, tenv)?;
-            let t2 = expr_type(b, tenv)?;
-            if t1 != t2 {
+        UntypedOps::Neq(a, b) => {
+            let e1 = typify_expr(*a, tenv)?;
+            let e2 = typify_expr(*b, tenv)?;
+            if e1.typ != e2.typ {
                 return Err(format!(
                     "Both sides of an not equal expression must have the same type. Found {} and {}.",
-                    t1, t2
+                    e1.typ, e2.typ
                 ));
             }
-            Ok(Type::Bool)
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Neq(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Lt(a, b) => {
+        UntypedOps::Lt(a, b) => {
             let s = "less than".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            assert_expr_type(b, Type::Int, s, tenv)?;
-            Ok(Type::Bool)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Lt(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Leq(a, b) => {
+        UntypedOps::Leq(a, b) => {
             let s = "less than or equal to".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            assert_expr_type(b, Type::Int, s, tenv)?;
-            Ok(Type::Bool)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Leq(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Gt(a, b) => {
+        UntypedOps::Gt(a, b) => {
             let s = "greater than".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            assert_expr_type(b, Type::Int, s, tenv)?;
-            Ok(Type::Bool)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Gt(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Geq(a, b) => {
+        UntypedOps::Geq(a, b) => {
             let s = "greater than or equal to".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            assert_expr_type(b, Type::Int, s, tenv)?;
-            Ok(Type::Bool)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Geq(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::And(a, b) => {
+        UntypedOps::And(a, b) => {
             let s = "and".to_string();
-            assert_expr_type(a, Type::Bool, s.clone(), tenv)?;
-            assert_expr_type(b, Type::Bool, s, tenv)?;
-            Ok(Type::Bool)
+            let e1 = assert_expr_type(*a, Type::Bool, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Bool, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::And(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::Or(a, b) => {
+        UntypedOps::Or(a, b) => {
             let s = "or".to_string();
-            assert_expr_type(a, Type::Bool, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Bool, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Bool, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Bool, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Bool,
+                expr: Expr::Op(TypedOps::Or(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::BitAnd(a, b) => {
+        UntypedOps::BitAnd(a, b) => {
             let s = "bitwise and".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::BitAnd(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::BitOr(a, b) => {
+        UntypedOps::BitOr(a, b) => {
             let s = "bitwise or".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::BitOr(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::BitXor(a, b) => {
+        UntypedOps::BitXor(a, b) => {
             let s = "bitwise xor".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::BitXor(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::BitShiftLeft(a, b) => {
+        UntypedOps::BitShiftLeft(a, b) => {
             let s = "bit shift left".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::BitShiftLeft(Box::new(e1), Box::new(e2))),
+            })
         }
-        Ops::BitShiftRight(a, b) => {
+        UntypedOps::BitShiftRight(a, b) => {
             let s = "bit shift right".to_string();
-            assert_expr_type(a, Type::Int, s.clone(), tenv)?;
-            Ok(assert_expr_type(b, Type::Int, s, tenv)?)
+            let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;
+            let e2 = assert_expr_type(*b, Type::Int, s, tenv)?;
+            Ok(TypedExpr {
+                typ: Type::Int,
+                expr: Expr::Op(TypedOps::BitShiftRight(Box::new(e1), Box::new(e2))),
+            })
         }
     }
 }
 
-fn assert_typify_expr(expr: Expr, t: Type, msg: String, tenv: &TEnv) -> Result<TypedExpr, String> {
-    let (e, ty) = typify_expr(expr, tenv)?;
-    if t != ty {
+fn assert_expr_type(
+    expr: UntypedExpr,
+    t: Type,
+    msg: String,
+    tenv: &TEnv,
+) -> Result<TypedExpr, String> {
+    let ty = typify_expr(expr, tenv)?;
+    if t != ty.typ {
         return Err(format!(
             "Expected type {} in {} expression. Found {}.",
-            t, msg, ty
+            t, msg, ty.typ
         ));
     }
-    Ok((e, ty))
-}
-
-fn assert_expr_type(expr: &Expr, t: Type, msg: String, tenv: &TEnv) -> Result<Type, String> {
-    let ty = expr_type(expr, tenv)?;
-    if t != ty {
-        return Err(format!(
-            "Expected type {} in {} expression. Found {}.",
-            t, msg, ty
-        ));
-    }
-    Ok(t)
+    Ok(ty)
 }

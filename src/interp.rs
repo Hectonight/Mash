@@ -1,6 +1,6 @@
 use crate::types::{
-    Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock as CodeBlock, TypedExpr,
-    TypedProgram as Program, TypedStatement as Statement, Value,
+    Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram,
+    TypedStatement, Value,
 };
 use std::collections::HashMap;
 use std::io::{Write, stderr, stdout};
@@ -54,12 +54,12 @@ impl<'a, W1: Write, W2: Write> Environment<'a, W1, W2> {
     }
 }
 
-pub fn interp(program: &Program) -> Result<i32, String> {
+pub fn interp(program: &TypedProgram) -> Result<i32, String> {
     interp_test(program, &mut stdout(), &mut stderr())
 }
 
 pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(
-    program: &Program,
+    program: &TypedProgram,
     out: &'a mut W1,
     err: &'a mut W2,
 ) -> Result<i32, String> {
@@ -69,7 +69,7 @@ pub fn interp_test<'a, W1: Write + 'static, W2: Write + 'static>(
 }
 
 fn interp_codeblock<W1: Write, W2: Write>(
-    codeblock: &CodeBlock,
+    codeblock: &TypedCodeBlock,
     env: &mut Environment<W1, W2>,
 ) -> ResultUnit {
     env.new_environment();
@@ -81,29 +81,31 @@ fn interp_codeblock<W1: Write, W2: Write>(
 }
 
 fn interp_statement<W1: Write, W2: Write>(
-    statement: &Statement,
+    statement: &TypedStatement,
     env: &mut Environment<W1, W2>,
 ) -> ResultUnit {
     match statement {
-        Statement::Expr((e, _)) => {
+        TypedStatement::Expr(e) => {
             interp_expr(e, env)?;
             Ok(())
         }
-        Statement::Print((e, _)) => {
+        TypedStatement::Print(e) => {
             let x = interp_expr(e, env)?;
             printer(&x, env)
         }
-        Statement::If(e, then, elifs, else_block) => interp_if(e, then, elifs, else_block, env),
-        Statement::Let(s, (e, _)) => interp_let(s, e, env),
-        Statement::Assignment(s, (e, _)) => interp_assignment(s, e, env),
-        Statement::While((e, _), cb) => interp_while(e, cb, env),
+        TypedStatement::If(e, then, elifs, else_block) => {
+            interp_if(e, then, elifs, else_block, env)
+        }
+        TypedStatement::Let(s, e) => interp_let(s, e, env),
+        TypedStatement::Assignment(s, e) => interp_assignment(s, e, env),
+        TypedStatement::While(e, cb) => interp_while(e, cb, env),
         _ => unimplemented!(),
     }
 }
 
 fn interp_while<W1: Write, W2: Write>(
-    e: &Expr,
-    code_block: &CodeBlock,
+    e: &TypedExpr,
+    code_block: &TypedCodeBlock,
     env: &mut Environment<W1, W2>,
 ) -> ResultUnit {
     while let Value::Bool(true) = interp_expr(e, env)? {
@@ -114,7 +116,7 @@ fn interp_while<W1: Write, W2: Write>(
 
 fn interp_assignment<W1: Write, W2: Write>(
     s: &String,
-    expr: &Expr,
+    expr: &TypedExpr,
     env: &mut Environment<W1, W2>,
 ) -> ResultUnit {
     let x = interp_expr(expr, env)?;
@@ -124,7 +126,7 @@ fn interp_assignment<W1: Write, W2: Write>(
 
 fn interp_let<W1: Write, W2: Write>(
     s: &String,
-    expr: &Expr,
+    expr: &TypedExpr,
     env: &mut Environment<W1, W2>,
 ) -> ResultUnit {
     let v = interp_expr(expr, env)?;
@@ -133,17 +135,16 @@ fn interp_let<W1: Write, W2: Write>(
 }
 
 fn interp_if<W1: Write, W2: Write>(
-    typed_expr: &TypedExpr,
-    codeblock: &CodeBlock,
-    elifs: &Vec<(TypedExpr, CodeBlock)>,
-    else_block: &Option<CodeBlock>,
+    e: &TypedExpr,
+    codeblock: &TypedCodeBlock,
+    elifs: &Vec<(TypedExpr, TypedCodeBlock)>,
+    else_block: &Option<TypedCodeBlock>,
     env: &mut Environment<W1, W2>,
 ) -> ResultUnit {
-    let (expr, _) = typed_expr;
-    match interp_expr(expr, env)? {
+    match interp_expr(e, env)? {
         Value::Bool(true) => interp_codeblock(codeblock, env),
         Value::Bool(false) => {
-            for ((e, _), block) in elifs {
+            for (e, block) in elifs {
                 match interp_expr(e, env)? {
                     Value::Bool(false) => (),
                     Value::Bool(true) => return interp_codeblock(block, env),
@@ -170,22 +171,22 @@ fn printer<W1: Write, W2: Write>(value: &Value, env: &mut Environment<W1, W2>) -
     }
 }
 
-fn interp_expr<W1: Write, W2: Write>(expr: &Expr, env: &Environment<W1, W2>) -> ResultValue {
-    match expr {
-        Expr::Datum(x) => Ok(interp_datum(&x)),
+fn interp_expr<W1: Write, W2: Write>(expr: &TypedExpr, env: &Environment<W1, W2>) -> ResultValue {
+    match &expr.expr {
+        Expr::Datum(x) => Ok(interp_datum(x)),
         Expr::Identifier(s) => {
-            if let Some(v) = env.lookup(&s) {
+            if let Some(v) = env.lookup(s) {
                 Ok(*v)
             } else {
                 Err("Undefined Identifier ".to_owned() + &*s)
             }
         }
         Expr::Op(op) => interp_ops(op, env),
-        _ => unimplemented!()
+        _ => unimplemented!(),
     }
 }
 
-fn interp_ops<W1: Write, W2: Write>(op: &Ops, env: &Environment<W1, W2>) -> ResultValue {
+fn interp_ops<W1: Write, W2: Write>(op: &TypedOps, env: &Environment<W1, W2>) -> ResultValue {
     match op {
         Ops::Ternary(a, b, c) => match interp_expr(&**a, env)? {
             Value::Bool(true) => interp_expr(&**b, env),

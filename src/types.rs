@@ -163,31 +163,50 @@ add cases in conditionals no reason i need to actually return 1 or 0 I can just 
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, BitAnd, BitOr, BitXor, Div, Mul, Neg, Not, Rem, Shl, Shr, Sub};
 
-#[derive(Debug, Clone)]
-pub enum Statement {
-    Expr(Expr),
-    If(Expr, CodeBlock, Vec<(Expr, CodeBlock)>, Option<CodeBlock>),
-    Print(Expr),
-    Let(String, Expr),
-    Assignment(String, Expr),
-    While(Expr, CodeBlock),
-    Break(usize),
-    Continue,
+pub type UntypedStatement = Statement<UntypedExpr>;
+pub type TypedStatement = Statement<TypedExpr>;
+
+pub type Program = UntypedCodeBlock;
+pub type TypedProgram = TypedCodeBlock;
+
+pub type UntypedCodeBlock = CodeBlock<UntypedExpr>;
+pub type TypedCodeBlock = CodeBlock<TypedExpr>;
+
+// pub type TypedExpr = (Expr, Type);
+
+pub type UntypedOps = Ops<UntypedExpr>;
+pub type TypedOps = Ops<TypedExpr>;
+
+pub struct UntypedExpr(pub(crate) Expr<UntypedExpr>);
+
+pub type CodeBlock<E> = Vec<Statement<E>>;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TypedExpr {
+    pub(crate) typ: Type,
+    pub(crate) expr: Expr<TypedExpr>,
+}
+
+impl std::ops::Deref for UntypedExpr {
+    type Target = Expr<UntypedExpr>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 #[derive(Debug, Clone)]
-pub enum TypedStatement {
-    Expr(TypedExpr),
+pub enum Statement<E> {
+    Expr(E),
     If(
-        TypedExpr,
-        TypedCodeBlock,
-        Vec<(TypedExpr, TypedCodeBlock)>,
-        Option<TypedCodeBlock>,
+        E,
+        CodeBlock<E>,
+        Vec<(E, CodeBlock<E>)>,
+        Option<CodeBlock<E>>,
     ),
-    Print(TypedExpr),
-    Let(String, TypedExpr),
-    Assignment(String, TypedExpr),
-    While(TypedExpr, TypedCodeBlock),
+    Print(E),
+    Let(String, E),
+    Assignment(String, E),
+    While(E, CodeBlock<E>),
     Break(usize),
     Continue,
 }
@@ -200,34 +219,12 @@ pub enum Type {
     Null,
 }
 
-impl Display for Type {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Type::Int => "int",
-                Type::Bool => "bool",
-                Type::Null => "null",
-                Type::Char => "char",
-            }
-        )
-    }
-}
-
-pub type Program = CodeBlock;
-pub type TypedProgram = TypedCodeBlock;
-pub type CodeBlock = Vec<Statement>;
-pub type TypedCodeBlock = Vec<TypedStatement>;
-pub type TypedExpr = (Expr, Type);
-
-// All recursive Expr will be in a box/vec
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Expr {
+pub enum Expr<E> {
     Datum(Datum),
     Identifier(String),
-    Op(Ops),
-    BuiltIn(BuiltIn, Vec<Expr>),
+    Op(Ops<E>),
+    BuiltIn(BuiltIn, Vec<E>),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -238,37 +235,31 @@ pub enum BuiltIn {
     Sgn,
 }
 
-impl Display for BuiltIn {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
-    }
-}
-
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Ops {
-    Ternary(Box<Expr>, Box<Expr>, Box<Expr>),
-    Not(Box<Expr>),
-    BitNot(Box<Expr>),
-    Neg(Box<Expr>),
-    Pos(Box<Expr>),
-    Plus(Box<Expr>, Box<Expr>),
-    Minus(Box<Expr>, Box<Expr>),
-    Mul(Box<Expr>, Box<Expr>),
-    Div(Box<Expr>, Box<Expr>),
-    Mod(Box<Expr>, Box<Expr>),
-    Eq(Box<Expr>, Box<Expr>),
-    Neq(Box<Expr>, Box<Expr>),
-    Lt(Box<Expr>, Box<Expr>),
-    Leq(Box<Expr>, Box<Expr>),
-    Gt(Box<Expr>, Box<Expr>),
-    Geq(Box<Expr>, Box<Expr>),
-    And(Box<Expr>, Box<Expr>),
-    Or(Box<Expr>, Box<Expr>),
-    BitAnd(Box<Expr>, Box<Expr>),
-    BitOr(Box<Expr>, Box<Expr>),
-    BitXor(Box<Expr>, Box<Expr>),
-    BitShiftLeft(Box<Expr>, Box<Expr>),
-    BitShiftRight(Box<Expr>, Box<Expr>),
+pub enum Ops<E> {
+    Ternary(Box<E>, Box<E>, Box<E>),
+    Not(Box<E>),
+    BitNot(Box<E>),
+    Neg(Box<E>),
+    Pos(Box<E>),
+    Plus(Box<E>, Box<E>),
+    Minus(Box<E>, Box<E>),
+    Mul(Box<E>, Box<E>),
+    Div(Box<E>, Box<E>),
+    Mod(Box<E>, Box<E>),
+    Eq(Box<E>, Box<E>),
+    Neq(Box<E>, Box<E>),
+    Lt(Box<E>, Box<E>),
+    Leq(Box<E>, Box<E>),
+    Gt(Box<E>, Box<E>),
+    Geq(Box<E>, Box<E>),
+    And(Box<E>, Box<E>),
+    Or(Box<E>, Box<E>),
+    BitAnd(Box<E>, Box<E>),
+    BitOr(Box<E>, Box<E>),
+    BitXor(Box<E>, Box<E>),
+    BitShiftLeft(Box<E>, Box<E>),
+    BitShiftRight(Box<E>, Box<E>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -289,6 +280,27 @@ pub enum Value {
 
 pub(crate) type ResultValue = Result<Value, String>;
 pub(crate) type ResultUnit = Result<(), String>;
+
+impl Display for Type {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Type::Int => "int",
+                Type::Bool => "bool",
+                Type::Null => "null",
+                Type::Char => "char",
+            }
+        )
+    }
+}
+
+impl Display for BuiltIn {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("{:?}", self).to_lowercase())
+    }
+}
 
 impl Add for Value {
     type Output = ResultValue;
