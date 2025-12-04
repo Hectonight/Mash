@@ -1,3 +1,6 @@
+// No longer being updated, my full attention is being directed towards the compiler,
+// Will make enough changes so that it compiles upon breaking changes until eventual deletion
+
 use crate::types::{
     Datum, Expr, Ops, ResultUnit, ResultValue, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram,
     TypedStatement, Value,
