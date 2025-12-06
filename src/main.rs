@@ -1,8 +1,6 @@
-#![allow(dead_code)]
 mod compile;
 mod compile_to_ir;
 mod inter_rep;
-mod interp;
 mod ir_asm;
 mod lexer;
 mod parser;
