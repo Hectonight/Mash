@@ -48,8 +48,8 @@ pub fn imul<A: Into<Operand>, B: Into<Operand>, C: Into<Imm>>(
     imm: Option<C>,
 ) -> IRInst {
     let oper1 = op1.into();
-    let oper2 = op2.map(|b| b.into());
-    let i = imm.map(|c| c.into());
+    let oper2 = op2.map(Into::into);
+    let i = imm.map(Into::into);
     IMul(oper1, oper2, i)
 }
 
