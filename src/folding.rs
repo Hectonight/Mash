@@ -23,12 +23,20 @@ fn fold_statement(s: TypedStatement) -> Option<TypedStatement> {
         TypedStatement::If(e, cb, v, el) => fold_if(e, cb, v, el),
         TypedStatement::Let(s, e) => Some(TypedStatement::Let(s, fold_expr(e))),
         TypedStatement::Assignment(s, e) => Some(TypedStatement::Assignment(s, fold_expr(e))),
-        TypedStatement::While(e, cb) => {
-            Some(TypedStatement::While(fold_expr(e), fold_codeblock(cb)))
-        }
+        TypedStatement::While(e, cb) => fold_while(e, cb),
         TypedStatement::Break(_) | TypedStatement::Continue => Some(s),
     }
 }
+
+fn fold_while(e: TypedExpr, cb: TypedCodeBlock) -> Option<TypedStatement> {
+    let fe = fold_expr(e);
+
+    match fe {
+        bool!(false) => None,
+        _ => Some(TypedStatement::While(fe, fold_codeblock(cb)))
+    }
+}
+
 
 fn fold_if(
     e1: TypedExpr,
@@ -36,7 +44,7 @@ fn fold_if(
     mut v: Vec<(TypedExpr, TypedCodeBlock)>,
     mut el: Option<TypedCodeBlock>,
 ) -> Option<TypedStatement> {
-    /**
+    /*
     Rules:
 
     All false blocks no else block => delete
