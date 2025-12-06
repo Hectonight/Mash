@@ -180,7 +180,7 @@ pub struct UntypedExpr(pub(crate) Expr<UntypedExpr>);
 
 pub type CodeBlock<E> = Vec<Statement<E>>;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypedExpr {
     pub(crate) typ: Type,
     pub(crate) expr: Expr<TypedExpr>,
@@ -207,6 +207,7 @@ pub enum Statement<E> {
     While(E, CodeBlock<E>),
     Break(usize),
     Continue,
+    CodeBlock(CodeBlock<E>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

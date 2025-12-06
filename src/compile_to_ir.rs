@@ -134,6 +134,7 @@ pub fn compile_to_ir(program: &TypedProgram) -> AsmProg {
 fn compile_statement(statement: &TypedStatement, cenv: &mut CEnv) -> AsmProg {
     match statement {
         TypedStatement::Expr(e) => compile_expr(e, cenv),
+        TypedStatement::CodeBlock(cb) => compile_codeblock(cb, cenv),
         TypedStatement::If(e, then, elifs, el) => compile_if(
             e,
             then,

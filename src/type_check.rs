@@ -138,6 +138,7 @@ fn typify_statement(
             }
         }
         UntypedStatement::Continue => Ok(TypedStatement::Continue),
+        UntypedStatement::CodeBlock(cb) => Ok(TypedStatement::CodeBlock(typify_codeblock(cb, tenv)?))
     }
 }
 

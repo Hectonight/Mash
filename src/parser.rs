@@ -38,10 +38,6 @@ fn parse_statement_option(
 fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedStatement> {
     match (lexer.peek(), lexer.peek2()) {
         (Some(Err(_)), _) => unrecognized_token(lexer),
-        // (Some(Ok(Token::Print)), _) => {
-        //     lexer.next();
-        //     parse_print(lexer)
-        // }
         (Some(Ok(Token::If)), _) => {
             lexer.next();
             parse_if(lexer)
@@ -50,7 +46,6 @@ fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedState
             lexer.next();
             parse_let(lexer)
         }
-
         (
             Some(Ok(Token::Identifier(_))),
             Some(Ok(
@@ -79,6 +74,7 @@ fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedState
             lexer.next();
             Ok(Statement::Continue)
         }
+        (Some(Ok(Token::LCurly)), _) => Ok(Statement::CodeBlock(parse_codeblock(lexer)?)),
         (None, _) => unexpected_eof(lexer),
         _ => parse_statement_expr(lexer),
     }

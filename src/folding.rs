@@ -1,30 +1,88 @@
 use crate::types::{TypedCodeBlock, TypedExpr, TypedProgram, TypedStatement};
-use crate::{bool, datum, ident, int, match_op, op};
+use crate::{bool, datum, ident, int, match_op, op, unit};
+use std::mem::replace;
 
 pub fn fold(program: TypedProgram) -> TypedProgram {
-    program.into_iter().map(|s| fold_statement(s)).collect()
+    program
+        .into_iter()
+        .filter_map(fold_statement)
+        .collect()
 }
 
 fn fold_codeblock(code_block: TypedCodeBlock) -> TypedCodeBlock {
-    code_block.into_iter().map(|s| fold_statement(s)).collect()
+    code_block
+        .into_iter()
+        .filter_map(fold_statement)
+        .collect()
 }
 
-fn fold_statement(s: TypedStatement) -> TypedStatement {
+fn fold_statement(s: TypedStatement) -> Option<TypedStatement> {
     match s {
-        TypedStatement::Expr(e) => TypedStatement::Expr(fold_expr(e)),
-        TypedStatement::If(e, cb, v, el) => TypedStatement::If(
-            fold_expr(e),
-            fold_codeblock(cb),
-            v.into_iter()
-                .map(|(ex, cbb)| (fold_expr(ex), fold_codeblock(cbb)))
-                .collect(),
-            el.map(fold_codeblock),
-        ),
-        TypedStatement::Let(s, e) => TypedStatement::Let(s, e),
-        TypedStatement::Assignment(s, e) => TypedStatement::Assignment(s, e),
-        TypedStatement::While(e, cb) => TypedStatement::While(fold_expr(e), fold_codeblock(cb)),
-        TypedStatement::Break(_) | TypedStatement::Continue => s,
+        TypedStatement::Expr(e) => Some(TypedStatement::Expr(fold_expr(e))),
+        TypedStatement::CodeBlock(cb) => Some(TypedStatement::CodeBlock(fold_codeblock(cb))),
+        TypedStatement::If(e, cb, v, el) => fold_if(e, cb, v, el),
+        TypedStatement::Let(s, e) => Some(TypedStatement::Let(s, fold_expr(e))),
+        TypedStatement::Assignment(s, e) => Some(TypedStatement::Assignment(s, fold_expr(e))),
+        TypedStatement::While(e, cb) => {
+            Some(TypedStatement::While(fold_expr(e), fold_codeblock(cb)))
+        }
+        TypedStatement::Break(_) | TypedStatement::Continue => Some(s),
     }
+}
+
+fn fold_if(
+    e1: TypedExpr,
+    cb1: TypedCodeBlock,
+    mut v: Vec<(TypedExpr, TypedCodeBlock)>,
+    mut el: Option<TypedCodeBlock>,
+) -> Option<TypedStatement> {
+    /**
+    Rules:
+
+    All false blocks no else block => delete
+    All false blocks with else block => else Codeblock
+    All false blocks until first true block => Codeblock of first true block
+
+    Deletes all false blocks
+
+    If it finds true block, set true block to new else block and delete rest
+     */
+    let mut loc = 0;
+    let (fe1, fcb1) = match fold_expr(e1) {
+        bool!(true) => return Some(TypedStatement::CodeBlock(fold_codeblock(cb1))),
+        bool!(false) => {
+            // Find first true or indeterminate
+            match v.iter().position(|(e, _)| bool!(false) != *e) {
+                None => return el.map(TypedStatement::CodeBlock),
+                Some(pos) => {
+                    loc = pos;
+                    replace(&mut v[pos], (unit!(), vec![]))
+                }
+            }
+        }
+        e => (e, fold_codeblock(cb1)),
+    };
+
+    if fe1 == bool!(true) {
+        return Some(TypedStatement::CodeBlock(fcb1));
+    }
+
+    let mut fv = Vec::new();
+    for (e, cb) in v.drain(loc + 1..) {
+        let fe = fold_expr(e);
+        match fe {
+            bool!(true) => {
+                el.replace(cb);
+                break;
+            }
+            bool!(false) => (),
+            _ => fv.push((fe, fold_codeblock(cb))),
+        }
+    }
+
+    let fel = el.map(fold_codeblock);
+
+    Some(TypedStatement::If(fe1, fcb1, fv, fel))
 }
 
 fn fold_expr(expr: TypedExpr) -> TypedExpr {
