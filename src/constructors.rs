@@ -249,6 +249,17 @@ macro_rules! bool {
 }
 
 #[macro_export]
+macro_rules! unit {
+    () => {
+        $crate::types::TypedExpr {
+            typ: $crate::types::Type::Unit,
+            expr: $crate::types::Expr::Datum($crate::types::Datum::Unit),
+        }
+    };
+}
+
+
+#[macro_export]
 macro_rules! ident {
     (_) => {
         $crate::types::TypedExpr {
