@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
@@ -293,6 +294,7 @@ define_registers!(R32 {
     R14D,
     R15D
 });
+
 define_registers!(R16 {
     AX,
     BX,

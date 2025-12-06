@@ -20,7 +20,6 @@ fn fold_statement(s: TypedStatement) -> TypedStatement {
                 .collect(),
             el.map(fold_codeblock),
         ),
-        TypedStatement::Print(e) => TypedStatement::Print(fold_expr(e)),
         TypedStatement::Let(s, e) => TypedStatement::Let(s, e),
         TypedStatement::Assignment(s, e) => TypedStatement::Assignment(s, e),
         TypedStatement::While(e, cb) => TypedStatement::While(fold_expr(e), fold_codeblock(cb)),

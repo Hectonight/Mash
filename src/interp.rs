@@ -92,10 +92,6 @@ fn interp_statement<W1: Write, W2: Write>(
             interp_expr(e, env)?;
             Ok(())
         }
-        TypedStatement::Print(e) => {
-            let x = interp_expr(e, env)?;
-            printer(&x, env)
-        }
         TypedStatement::If(e, then, elifs, else_block) => {
             interp_if(e, then, elifs, else_block, env)
         }
@@ -165,6 +161,7 @@ fn interp_if<W1: Write, W2: Write>(
     }
 }
 
+#[allow(dead_code)]
 fn printer<W1: Write, W2: Write>(value: &Value, env: &mut Environment<W1, W2>) -> ResultUnit {
     match value {
         Value::Int(x) => writeln!(env.out, "{}", x).map_err(|e| e.to_string()),

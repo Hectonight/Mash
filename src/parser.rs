@@ -38,10 +38,10 @@ fn parse_statement_option(
 fn parse_statement(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedStatement> {
     match (lexer.peek(), lexer.peek2()) {
         (Some(Err(_)), _) => unrecognized_token(lexer),
-        (Some(Ok(Token::Print)), _) => {
-            lexer.next();
-            parse_print(lexer)
-        }
+        // (Some(Ok(Token::Print)), _) => {
+        //     lexer.next();
+        //     parse_print(lexer)
+        // }
         (Some(Ok(Token::If)), _) => {
             lexer.next();
             parse_if(lexer)
@@ -272,12 +272,6 @@ fn parse_codeblock_no_semi_rest(lexer: &mut PeekableLexer<Token>) -> ParseResult
     }
 }
 
-fn parse_print(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedStatement> {
-    let x = parse_expr(lexer)?;
-    assert_token(lexer, Token::Semicolon, ";")?;
-    Ok(Statement::Print(x))
-}
-
 fn parse_statement_expr(lexer: &mut PeekableLexer<Token>) -> ParseResult<UntypedStatement> {
     let x = parse_expr(lexer)?;
     assert_token(lexer, Token::Semicolon, ";")?;
@@ -296,6 +290,7 @@ fn parse_builtin(ident: String, lexer: &mut PeekableLexer<Token>) -> ParseResult
         "max" => BuiltIn::Max,
         "min" => BuiltIn::Min,
         "sgn" => BuiltIn::Sgn,
+        "print" => BuiltIn::Print,
         _ => return Err(("Unknown Function Name".to_string(), lexer.span())),
     };
 

@@ -203,7 +203,6 @@ pub enum Statement<E> {
         Vec<(E, CodeBlock<E>)>,
         Option<CodeBlock<E>>,
     ),
-    Print(E),
     Let(String, E),
     Assignment(String, E),
     While(E, CodeBlock<E>),
@@ -233,6 +232,7 @@ pub enum BuiltIn {
     Max,
     Min,
     Sgn,
+    Print,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

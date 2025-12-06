@@ -64,9 +64,6 @@ pub enum Token {
     // #[regex(r"'\\u\{[\da-fA-F]{1,6}\}'", |lex| char::from_u32(lex.slice()[3..lex.span().end - lex.span().start - 2].parse::<u32>().unwrap()))]
     Char(char),
     // String(String),
-    #[token("print")]
-    Print,
-
 
     #[token("false", |_| false)]
     #[token("true", |_| true)]

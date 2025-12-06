@@ -1,8 +1,8 @@
+use crate::op;
 use crate::types::{
     BuiltIn, Datum, Expr, Program, Type, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram,
     TypedStatement, UntypedCodeBlock, UntypedExpr, UntypedOps, UntypedStatement,
 };
-use crate::op;
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::ops::RangeBounds;
@@ -94,7 +94,6 @@ fn typify_statement(
                 },
             ))
         }
-        UntypedStatement::Print(e) => Ok(TypedStatement::Print(typify_expr(e, tenv)?)),
         UntypedStatement::Let(id, e) => {
             let ex = typify_expr(e, tenv)?;
             if tenv.member(&id) {
@@ -226,6 +225,22 @@ fn builtin_type(
                 })
             }
         }
+        BuiltIn::Print => {
+            if params.len() > 1 {
+                arity_range_error(&builtin, 0..=1, params.len())
+            } else {
+                let tparams =
+                    if params.len() == 0 {
+                        vec![]
+                    } else {
+                        vec![typify_expr(params.pop().unwrap(), tenv)?]
+                    };
+                Ok(TypedExpr {
+                    typ: Type::Unit,
+                    expr: Expr::BuiltIn(builtin, tparams),
+                })
+            }
+        }
     }
 }
 
@@ -256,18 +271,8 @@ fn op_type(ops: UntypedOps, tenv: &TEnv) -> Result<TypedExpr, String> {
             })
         }
         UntypedOps::Not(v) => assert_expr_type(*v, Type::Bool, "not".to_string(), tenv),
-        UntypedOps::BitNot(v) => assert_expr_type(
-            *v,
-            Type::Int,
-            "bitwise not".to_string(),
-            tenv,
-        ),
-        UntypedOps::Neg(v) => assert_expr_type(
-            *v,
-            Type::Int,
-            "negation".to_string(),
-            tenv,
-        ),
+        UntypedOps::BitNot(v) => assert_expr_type(*v, Type::Int, "bitwise not".to_string(), tenv),
+        UntypedOps::Neg(v) => assert_expr_type(*v, Type::Int, "negation".to_string(), tenv),
         UntypedOps::Pos(v) => assert_expr_type(*v, Type::Int, "pos".to_string(), tenv),
         UntypedOps::Plus(a, b) => {
             let s = "addition".to_string();

@@ -1,12 +1,18 @@
-use crate::constructors::{add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, idiv, imul2, je, jg, jge, jmp, jne, label, mov, neg, not, or, pop, push, sar, section, shl, sub, test, xor};
+use crate::constructors::{
+    add, and, call, cmove, cmovg, cmovge, cmovl, cmovle, cmovne, cmp, external, global, idiv,
+    imul2, je, jg, jge, jmp, jne, label, mov, neg, not, or, pop, push, sar, section, shl, sub,
+    test, xor,
+};
 use crate::inter_rep::IRInst::{Cqo, Ret, Syscall};
 use crate::inter_rep::Label;
-use crate::inter_rep::R32::{EAX, EDI};
-use crate::inter_rep::R64::{R15, R8, RAX, RCX, RDI, RDX, RSI, RSP};
 use crate::inter_rep::R8::CL;
+use crate::inter_rep::R32::{EAX, EDI};
+use crate::inter_rep::R64::{R8, R15, RAX, RCX, RDI, RDX, RSI, RSP};
 use crate::inter_rep::{AsmProg, Mem};
 use crate::mem;
-use crate::types::{BuiltIn, Datum, Expr, Type, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram, TypedStatement};
+use crate::types::{
+    BuiltIn, Datum, Expr, Type, TypedCodeBlock, TypedExpr, TypedOps, TypedProgram, TypedStatement,
+};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
@@ -135,7 +141,6 @@ fn compile_statement(statement: &TypedStatement, cenv: &mut CEnv) -> AsmProg {
             el,
             cenv,
         ),
-        TypedStatement::Print(e) => compile_print(e, cenv),
         TypedStatement::Let(s, e) => compile_let(s, e, cenv),
         TypedStatement::Assignment(s, e) => compile_assignment(s, e, cenv),
         TypedStatement::While(e, cb) => compile_while(e, cb, cenv),
@@ -232,77 +237,6 @@ fn compile_let(s: &String, e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
     asm
 }
 
-fn compile_print(e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
-    match e.typ {
-        Type::Int => compile_print_int(e, cenv),
-        Type::Bool => compile_print_bool(e, cenv),
-        Type::Char => compile_print_char(e, cenv),
-        Type::Unit => compile_print_unit(),
-    }
-}
-
-fn compile_print_char(e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
-    let mut asm = compile_expr(e, cenv);
-    asm.append(&mut vec![
-        push(RAX),
-        mov(RDI, RSP),
-        push(R15),
-        mov(R15, RSP),
-        and(R15, 0b1000),
-        sub(RSP, R15),
-        external("print_char"),
-        call("print_char"),
-        add(RSP, R15),
-        pop(R15),
-        add(RSP, 8),
-    ]);
-    asm
-}
-
-fn compile_print_bool(e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
-    let mut asm = compile_expr(e, cenv);
-    asm.append(&mut vec![
-        push(R15),
-        mov(R15, RSP),
-        and(R15, 0b1000),
-        sub(RSP, R15),
-        external("print_bool"),
-        mov(EDI, EAX),
-        call("print_bool"),
-        add(RSP, R15),
-        pop(R15),
-    ]);
-    asm
-}
-
-fn compile_print_unit() -> AsmProg {
-    vec![
-        mov(RAX,1),
-        mov(RDI, RAX),
-        push(0xA2928),
-        mov(RSI, RSP),
-        mov(RDX,3),
-        Syscall,
-        add(RSP, 8)
-    ]
-}
-
-fn compile_print_int(e: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
-    let mut asm = compile_expr(e, cenv);
-    asm.append(&mut vec![
-        push(R15),
-        mov(R15, RSP),
-        and(R15, 0b1000),
-        sub(RSP, R15),
-        external("print_int"),
-        mov(RDI, RAX),
-        call("print_int"),
-        add(RSP, R15),
-        pop(R15),
-    ]);
-    asm
-}
-
 fn compile_expr(expr: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
     match &expr.expr {
         Expr::Datum(d) => compile_datum(&d),
@@ -314,13 +248,14 @@ fn compile_expr(expr: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
 
 fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) -> AsmProg {
     let mut asm = if params.len() > 0 {
-        let mut s: Vec<_> = params[..params.len() - 1].iter().flat_map(|p|
-            {
+        let mut s: Vec<_> = params[..params.len() - 1]
+            .iter()
+            .flat_map(|p| {
                 let mut v = compile_expr(p, cenv);
                 v.push(push(RAX));
                 v
-            }
-        ).collect();
+            })
+            .collect();
         s.append(&mut compile_expr(&params[params.len() - 1], cenv));
         s
     } else {
@@ -330,29 +265,21 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
     match builtin {
         BuiltIn::Abs => {
             let skip = cenv.genlabel("skip");
-            asm.append( &mut vec![
+            asm.append(&mut vec![
                 cmp(RAX, 0),
                 jge(skip.clone()),
                 neg(RAX),
-                label(skip)
+                label(skip),
             ])
         }
         BuiltIn::Max => {
-            for _ in 0..params.len()-1 {
-                asm.append(&mut vec![
-                    pop(RDI),
-                    cmp(RDI, RAX),
-                    cmovg(RAX, RDI)
-                ])
+            for _ in 0..params.len() - 1 {
+                asm.append(&mut vec![pop(RDI), cmp(RDI, RAX), cmovg(RAX, RDI)])
             }
         }
         BuiltIn::Min => {
-            for _ in 0..params.len()-1 {
-                asm.append(&mut vec![
-                    pop(RDI),
-                    cmp(RDI, RAX),
-                    cmovl(RAX, RDI)
-                ])
+            for _ in 0..params.len() - 1 {
+                asm.append(&mut vec![pop(RDI), cmp(RDI, RAX), cmovl(RAX, RDI)])
             }
         }
         BuiltIn::Sgn => {
@@ -366,11 +293,72 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
                 jmp(done.clone()),
                 label(pos),
                 mov(RAX, 1),
-                label(done)
+                label(done),
             ])
         }
+        BuiltIn::Print => {
+            asm.append(&mut
+                if params.len() == 0 {
+                    vec![
+                        mov(RAX, 1),
+                        mov(RDI, RAX),
+                        push(0xa),
+                        mov(RSI, RSP),
+                        mov(RDX, 1),
+                        Syscall,
+                        add(RSP, 8),
+                    ]
+                } else {
+                    match params[0].typ {
+                        Type::Int => vec![
+                            push(R15),
+                            mov(R15, RSP),
+                            and(R15, 0b1000),
+                            sub(RSP, R15),
+                            external("print_int"),
+                            mov(RDI, RAX),
+                            call("print_int"),
+                            add(RSP, R15),
+                            pop(R15),
+                        ],
+                        Type::Bool => vec![
+                            push(R15),
+                            mov(R15, RSP),
+                            and(R15, 0b1000),
+                            sub(RSP, R15),
+                            external("print_bool"),
+                            mov(EDI, EAX),
+                            call("print_bool"),
+                            add(RSP, R15),
+                            pop(R15),
+                        ],
+                        Type::Char => vec![
+                            push(RAX),
+                            mov(RDI, RSP),
+                            push(R15),
+                            mov(R15, RSP),
+                            and(R15, 0b1000),
+                            sub(RSP, R15),
+                            external("print_char"),
+                            call("print_char"),
+                            add(RSP, R15),
+                            pop(R15),
+                            add(RSP, 8),
+                        ],
+                        Type::Unit => vec![
+                            mov(RAX, 1),
+                            mov(RDI, RAX),
+                            push(0xA2928),
+                            mov(RSI, RSP),
+                            mov(RDX, 3),
+                            Syscall,
+                            add(RSP, 8),
+                        ]
+                    }
+                });
+            asm.push(xor(RAX, RAX));
+        },
     }
-
 
     asm
 }
@@ -401,7 +389,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
             asm.append(&mut compile_expr(e2, cenv));
             asm.push(label(done));
             asm
-        },
+        }
         TypedOps::Not(e) => {
             let mut asm = compile_expr(e, cenv);
             asm.push(xor(RAX, 1));
@@ -586,6 +574,6 @@ fn compile_datum(datum: &Datum) -> AsmProg {
         Datum::Int(i) => vec![mov(RAX, *i)],
         Datum::Bool(b) => vec![mov(EAX, if *b { 1 } else { 0 })],
         Datum::Char(c) => vec![mov(RAX, *c as i128)],
-        Datum::Unit => vec![],
+        Datum::Unit => vec![xor(RAX, RAX)],
     }
 }

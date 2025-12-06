@@ -33,7 +33,7 @@ runtime/%.o: runtime/%.c
 clean:
 	@$(RM) out/* runtime/*.o
 
-clean_out:
+fclean:
 	@$(RM) out/*
 
 $(OUTDIR)/%.o: $(OUTDIR)/%.s
