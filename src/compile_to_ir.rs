@@ -127,7 +127,7 @@ pub fn compile_to_ir(program: &TypedProgram) -> AsmProg {
         asm.push(add(RSP, size))
     }
 
-    asm.append(&mut vec![xor(RAX, RAX), Ret]);
+    asm.extend([xor(RAX, RAX), Ret]);
     asm
 }
 
@@ -174,10 +174,9 @@ fn compile_while(e: &TypedExpr, code_block: &TypedCodeBlock, cenv: &mut CEnv) ->
     cenv.incr_control_flow(while_label.clone(), done.clone());
     let mut asm = vec![label(while_label.clone())];
     asm.append(&mut compile_expr(e, cenv));
-    asm.append(&mut vec![test(RAX, RAX), je(done.clone())]);
+    asm.extend([test(RAX, RAX), je(done.clone())]);
     asm.append(&mut compile_codeblock(code_block, cenv));
-    asm.push(jmp(while_label));
-    asm.push(label(done));
+    asm.extend([jmp(while_label), label(done)]);
     cenv.decr_control_flow();
     asm
 }
@@ -199,16 +198,16 @@ fn compile_if(
     let done = cenv.genlabel("done");
     let skip_main = cenv.genlabel("skip");
 
-    asm.append(&mut vec![test(RAX, RAX), je(skip_main.clone())]);
+    asm.extend([test(RAX, RAX), je(skip_main.clone())]);
     asm.append(&mut compile_codeblock(then, cenv));
-    asm.append(&mut vec![jmp(done.clone()), label(skip_main)]);
+    asm.extend([jmp(done.clone()), label(skip_main)]);
 
     for (e, cb) in elifs {
         asm.append(&mut compile_expr(&e, cenv));
         let skip = cenv.genlabel("skip");
-        asm.append(&mut vec![test(RAX, RAX), je(skip.clone())]);
+        asm.extend([test(RAX, RAX), je(skip.clone())]);
         asm.append(&mut compile_codeblock(cb, cenv));
-        asm.append(&mut vec![jmp(done.clone()), label(skip)]);
+        asm.extend([jmp(done.clone()), label(skip)]);
     }
 
     if let Some(els) = el {
@@ -248,7 +247,7 @@ fn compile_expr(expr: &TypedExpr, cenv: &mut CEnv) -> AsmProg {
 }
 
 fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) -> AsmProg {
-    let mut asm = if params.len() > 0 {
+    let mut asm = if !params.is_empty() {
         let mut s: Vec<_> = params[..params.len() - 1]
             .iter()
             .flat_map(|p| {
@@ -266,7 +265,7 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
     match builtin {
         BuiltIn::Abs => {
             let skip = cenv.genlabel("skip");
-            asm.append(&mut vec![
+            asm.extend([
                 cmp(RAX, 0),
                 jge(skip.clone()),
                 neg(RAX),
@@ -275,18 +274,18 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
         }
         BuiltIn::Max => {
             for _ in 0..params.len() - 1 {
-                asm.append(&mut vec![pop(RDI), cmp(RDI, RAX), cmovg(RAX, RDI)])
+                asm.extend([pop(RDI), cmp(RDI, RAX), cmovg(RAX, RDI)])
             }
         }
         BuiltIn::Min => {
             for _ in 0..params.len() - 1 {
-                asm.append(&mut vec![pop(RDI), cmp(RDI, RAX), cmovl(RAX, RDI)])
+                asm.extend([pop(RDI), cmp(RDI, RAX), cmovl(RAX, RDI)])
             }
         }
         BuiltIn::Sgn => {
             let pos = cenv.genlabel("pos");
             let done = cenv.genlabel("done");
-            asm.append(&mut vec![
+            asm.extend([
                 cmp(RAX, 0),
                 jg(pos.clone()),
                 je(done.clone()),
@@ -298,9 +297,8 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
             ])
         }
         BuiltIn::Print => {
-            asm.append(&mut
-                if params.len() == 0 {
-                    vec![
+                if params.is_empty() {
+                    asm.extend([
                         mov(RAX, 1),
                         mov(RDI, RAX),
                         push(0xa),
@@ -308,10 +306,10 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
                         mov(RDX, 1),
                         Syscall,
                         add(RSP, 8),
-                    ]
+                    ])
                 } else {
                     match params[0].typ {
-                        Type::Int => vec![
+                        Type::Int => asm.extend([
                             push(R15),
                             mov(R15, RSP),
                             and(R15, 0b1000),
@@ -321,8 +319,8 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
                             call("print_int"),
                             add(RSP, R15),
                             pop(R15),
-                        ],
-                        Type::Bool => vec![
+                        ]),
+                        Type::Bool => asm.extend([
                             push(R15),
                             mov(R15, RSP),
                             and(R15, 0b1000),
@@ -332,8 +330,8 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
                             call("print_bool"),
                             add(RSP, R15),
                             pop(R15),
-                        ],
-                        Type::Char => vec![
+                        ]),
+                        Type::Char => asm.extend([
                             push(RAX),
                             mov(RDI, RSP),
                             push(R15),
@@ -345,8 +343,8 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
                             add(RSP, R15),
                             pop(R15),
                             add(RSP, 8),
-                        ],
-                        Type::Unit => vec![
+                        ]),
+                        Type::Unit => asm.extend([
                             mov(RAX, 1),
                             mov(RDI, RAX),
                             push(0xA2928),
@@ -354,9 +352,9 @@ fn compile_builtin(builtin: &BuiltIn, params: &Vec<TypedExpr>, cenv: &mut CEnv) 
                             mov(RDX, 3),
                             Syscall,
                             add(RSP, 8),
-                        ]
+                        ])
                     }
-                });
+                };
             asm.push(xor(RAX, RAX));
         },
     }
@@ -382,11 +380,9 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
             let mut asm = compile_expr(c, cenv);
             let done = cenv.genlabel("done");
             let cond_neg = cenv.genlabel("cond_neg");
-            asm.push(test(RAX, RAX));
-            asm.push(je(cond_neg.clone()));
+            asm.extend([test(RAX, RAX), je(cond_neg.clone())]);
             asm.append(&mut compile_expr(e1, cenv));
-            asm.push(jmp(done.clone()));
-            asm.push(label(cond_neg));
+            asm.extend([jmp(done.clone()), label(cond_neg)]);
             asm.append(&mut compile_expr(e2, cenv));
             asm.push(label(done));
             asm
@@ -409,31 +405,31 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         TypedOps::Pos(e) => compile_expr(e, cenv),
         TypedOps::Plus(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![pop(RDI), add(RAX, RDI)]);
+            asm.extend([pop(RDI), add(RAX, RDI)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::Minus(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![pop(RDI), sub(RDI, RAX), mov(RAX, RDI)]);
+            asm.extend([pop(RDI), sub(RDI, RAX), mov(RAX, RDI)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::Mul(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![pop(RDI), imul2(RAX, RDI)]);
+            asm.extend([pop(RDI), imul2(RAX, RDI)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::Div(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![mov(RCX, RAX), pop(RAX), Cqo, idiv(RCX)]);
+            asm.extend([mov(RCX, RAX), pop(RAX), Cqo, idiv(RCX)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::Mod(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 mov(RCX, RAX),
                 pop(RAX),
                 Cqo,
@@ -445,7 +441,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         }
         TypedOps::Eq(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 pop(RDI),
                 mov(RCX, RAX),
                 xor(RAX, RAX),
@@ -458,7 +454,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         }
         TypedOps::Neq(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 pop(RDI),
                 mov(RCX, RAX),
                 xor(RAX, RAX),
@@ -471,7 +467,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         }
         TypedOps::Lt(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 pop(RDI),
                 mov(RCX, RAX),
                 xor(RAX, RAX),
@@ -484,7 +480,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         }
         TypedOps::Leq(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 pop(RDI),
                 mov(RCX, RAX),
                 xor(RAX, RAX),
@@ -497,7 +493,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         }
         TypedOps::Gt(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 pop(RDI),
                 mov(RCX, RAX),
                 xor(RAX, RAX),
@@ -510,7 +506,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         }
         TypedOps::Geq(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![
+            asm.extend([
                 pop(RDI),
                 mov(RCX, RAX),
                 xor(RAX, RAX),
@@ -524,7 +520,7 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         TypedOps::And(e1, e2) => {
             let done = cenv.genlabel("done");
             let mut asm = compile_expr(e1, cenv);
-            asm.append(&mut vec![test(RAX, RAX), je(done.clone())]);
+            asm.extend([test(RAX, RAX), je(done.clone())]);
             asm.append(&mut compile_expr(e2, cenv));
             asm.push(label(done));
             asm
@@ -532,38 +528,38 @@ fn compile_op(op: &TypedOps, cenv: &mut CEnv) -> AsmProg {
         TypedOps::Or(e1, e2) => {
             let done = cenv.genlabel("done");
             let mut asm = compile_expr(e1, cenv);
-            asm.append(&mut vec![test(RAX, RAX), jne(done.clone())]);
+            asm.extend([test(RAX, RAX), jne(done.clone())]);
             asm.append(&mut compile_expr(e2, cenv));
             asm.push(label(done));
             asm
         }
         TypedOps::BitAnd(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![pop(RDI), and(RAX, RDI)]);
+            asm.extend([pop(RDI), and(RAX, RDI)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::BitOr(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![pop(RDI), or(RAX, RDI)]);
+            asm.extend([pop(RDI), or(RAX, RDI)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::BitXor(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![pop(RDI), xor(RAX, RDI)]);
+            asm.extend([pop(RDI), xor(RAX, RDI)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::BitShiftLeft(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![mov(RCX, RAX), pop(RAX), shl(RAX, CL)]);
+            asm.extend([mov(RCX, RAX), pop(RAX), shl(RAX, CL)]);
             cenv.decrement_stack(1);
             asm
         }
         TypedOps::BitShiftRight(e1, e2) => {
             let mut asm = compile_op2(e1, e2, cenv);
-            asm.append(&mut vec![mov(RCX, RAX), pop(RAX), sar(RAX, CL)]);
+            asm.extend([mov(RCX, RAX), pop(RAX), sar(RAX, CL)]);
             cenv.decrement_stack(1);
             asm
         }

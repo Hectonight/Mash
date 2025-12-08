@@ -209,7 +209,7 @@ fn builtin_type(
         }
 
         BuiltIn::Max | BuiltIn::Min => {
-            if params.len() == 0 {
+            if params.is_empty() {
                 arity_range_error(&builtin, 1.., 0)
             } else {
                 let tparams = params
@@ -231,7 +231,7 @@ fn builtin_type(
                 arity_range_error(&builtin, 0..=1, params.len())
             } else {
                 let tparams =
-                    if params.len() == 0 {
+                    if params.is_empty() {
                         vec![]
                     } else {
                         vec![typify_expr(params.pop().unwrap(), tenv)?]
