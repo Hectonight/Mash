@@ -123,12 +123,12 @@ fn typify_statement(
                     ex.typ
                 ))
             } else {
+                tenv.control_flow -= 1;
                 Ok(TypedStatement::While(ex, typify_codeblock(cb, tenv)?))
             }
         }
         UntypedStatement::Break(n) => {
             if tenv.control_flow >= n {
-                tenv.control_flow -= n;
                 Ok(TypedStatement::Break(n))
             } else {
                 Err(format!(
