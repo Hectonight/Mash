@@ -3,23 +3,26 @@ use crate::{bool, datum, ident, int, match_op, op, unit};
 use std::mem::replace;
 
 pub fn fold(program: TypedProgram) -> TypedProgram {
-    program
-        .into_iter()
-        .filter_map(fold_statement)
-        .collect()
+    let mut fprog = Vec::new();
+    for s in program {
+        let fs_op = fold_statement(s);
+        match fs_op {
+            Some(fs @ (TypedStatement::Break(_) | TypedStatement::Continue)) => {
+                fprog.push(fs);
+                break;
+            }
+            None => (),
+            Some(fs) => fprog.push(fs)
+        }
+    }
+    fprog
 }
 
-fn fold_codeblock(code_block: TypedCodeBlock) -> TypedCodeBlock {
-    code_block
-        .into_iter()
-        .filter_map(fold_statement)
-        .collect()
-}
 
 fn fold_statement(s: TypedStatement) -> Option<TypedStatement> {
     match s {
         TypedStatement::Expr(e) => Some(TypedStatement::Expr(fold_expr(e))),
-        TypedStatement::CodeBlock(cb) => Some(TypedStatement::CodeBlock(fold_codeblock(cb))),
+        TypedStatement::CodeBlock(cb) => Some(TypedStatement::CodeBlock(fold(cb))),
         TypedStatement::If(e, cb, v, el) => fold_if(e, cb, v, el),
         TypedStatement::Let(s, e) => Some(TypedStatement::Let(s, fold_expr(e))),
         TypedStatement::Assignment(s, e) => Some(TypedStatement::Assignment(s, fold_expr(e))),
@@ -33,7 +36,7 @@ fn fold_while(e: TypedExpr, cb: TypedCodeBlock) -> Option<TypedStatement> {
 
     match fe {
         bool!(false) => None,
-        _ => Some(TypedStatement::While(fe, fold_codeblock(cb)))
+        _ => Some(TypedStatement::While(fe, fold(cb)))
     }
 }
 
@@ -57,7 +60,7 @@ fn fold_if(
      */
     let mut loc = 0;
     let (fe1, fcb1) = match fold_expr(e1) {
-        bool!(true) => return Some(TypedStatement::CodeBlock(fold_codeblock(cb1))),
+        bool!(true) => return Some(TypedStatement::CodeBlock(fold(cb1))),
         bool!(false) => {
             // Find first true or indeterminate
             match v.iter().position(|(e, _)| bool!(false) != *e) {
@@ -68,7 +71,7 @@ fn fold_if(
                 }
             }
         }
-        e => (e, fold_codeblock(cb1)),
+        e => (e, fold(cb1)),
     };
 
     if fe1 == bool!(true) {
@@ -84,11 +87,11 @@ fn fold_if(
                 break;
             }
             bool!(false) => (),
-            _ => fv.push((fe, fold_codeblock(cb))),
+            _ => fv.push((fe, fold(cb))),
         }
     }
 
-    let fel = el.map(fold_codeblock);
+    let fel = el.map(fold);
 
     Some(TypedStatement::If(fe1, fcb1, fv, fel))
 }
