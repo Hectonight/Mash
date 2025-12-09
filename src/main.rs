@@ -9,6 +9,7 @@ mod folding;
 #[macro_use]
 mod constructors;
 mod type_check;
+mod optimize_asm;
 
 use lexer::{PeekableLexer, Token};
 

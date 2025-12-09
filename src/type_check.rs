@@ -123,8 +123,9 @@ fn typify_statement(
                     ex.typ
                 ))
             } else {
+                let cb = typify_codeblock(cb, tenv)?;
                 tenv.control_flow -= 1;
-                Ok(TypedStatement::While(ex, typify_codeblock(cb, tenv)?))
+                Ok(TypedStatement::While(ex, cb))
             }
         }
         UntypedStatement::Break(n) => {

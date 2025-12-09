@@ -8,3 +8,4 @@ pub mod parser;
 pub mod type_check;
 pub mod types;
 pub mod folding;
+pub mod optimize_asm;

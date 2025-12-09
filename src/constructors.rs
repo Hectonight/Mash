@@ -334,3 +334,82 @@ macro_rules! match_op {
         }
     };
 }
+
+#[macro_export]
+macro_rules! cmovcc {
+    ($pat1:pat, $pat2:pat) => {
+        $crate::inter_rep::IRInst::CMove($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovne($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovl($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovle($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovg($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovge($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMova($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovae($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovb($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovbe($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovc($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovz($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovze($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnl($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovng($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnge($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnle($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovna($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnb($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnae($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnbe($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovo($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovp($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovno($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnp($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovs($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovpo($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovpe($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovns($pat1, $pat2)
+        | $crate::inter_rep::IRInst::CMovnz($pat1, $pat2)
+    };
+    (..) => {
+        $crate::inter_rep::IRInst::CMove(..)
+        | $crate::inter_rep::IRInst::CMovne(..)
+        | $crate::inter_rep::IRInst::CMovl(..)
+        | $crate::inter_rep::IRInst::CMovle(..)
+        | $crate::inter_rep::IRInst::CMovg(..)
+        | $crate::inter_rep::IRInst::CMovge(..)
+        | $crate::inter_rep::IRInst::CMova(..)
+        | $crate::inter_rep::IRInst::CMovae(..)
+        | $crate::inter_rep::IRInst::CMovb(..)
+        | $crate::inter_rep::IRInst::CMovbe(..)
+        | $crate::inter_rep::IRInst::CMovc(..)
+        | $crate::inter_rep::IRInst::CMovz(..)
+        | $crate::inter_rep::IRInst::CMovze(..)
+        | $crate::inter_rep::IRInst::CMovnl(..)
+        | $crate::inter_rep::IRInst::CMovng(..)
+        | $crate::inter_rep::IRInst::CMovnge(..)
+        | $crate::inter_rep::IRInst::CMovnle(..)
+        | $crate::inter_rep::IRInst::CMovna(..)
+        | $crate::inter_rep::IRInst::CMovnb(..)
+        | $crate::inter_rep::IRInst::CMovnae(..)
+        | $crate::inter_rep::IRInst::CMovnbe(..)
+        | $crate::inter_rep::IRInst::CMovo(..)
+        | $crate::inter_rep::IRInst::CMovp(..)
+        | $crate::inter_rep::IRInst::CMovno(..)
+        | $crate::inter_rep::IRInst::CMovnp(..)
+        | $crate::inter_rep::IRInst::CMovs(..)
+        | $crate::inter_rep::IRInst::CMovpo(..)
+        | $crate::inter_rep::IRInst::CMovpe(..)
+        | $crate::inter_rep::IRInst::CMovns(..)
+        | $crate::inter_rep::IRInst::CMovnz(..)
+    }
+}
+
+#[macro_export]
+macro_rules! opint {
+    ($expr:expr) => {
+        $crate::inter_rep::Operand::Imm($crate::inter_rep::Imm::Int($expr))
+    };
+    ($pat:pat) => {
+        $crate::inter_rep::Operand::Imm($crate::inter_rep::Imm::Int($pat))
+    };
+
+}

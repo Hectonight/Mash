@@ -2,7 +2,7 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Register {
     R64(R64),
     R32(R32),
@@ -12,7 +12,7 @@ pub enum Register {
 
 macro_rules! define_registers {
     ($regname:ident { $($variant:ident),* $(,)? }) => {
-        #[derive(Debug, Clone, Copy)]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub enum $regname { $($variant),* }
 
         impl std::fmt::Display for $regname {
@@ -255,6 +255,9 @@ macro_rules! reg {
     };
     (R15B) => {
         $crate::inter_rep::Register::R8($crate::inter_rep::R8::R15B)
+    };
+    ($pat:pat) => {
+        $crate::inter_rep::Operand::Reg($pat)
     };
 }
 
@@ -513,7 +516,7 @@ macro_rules! mem {
     [None, $index:expr, $scale:expr, $disp:expr] => {
          Mem {
              base: None,
-             index: Some($crate::inter_rep::SimpleOperand::Reg($crate::inter_rep::Register::from($index))),
+             index: Some($crate::inter_rep::SimpleOperand::Reg($crate::reg!($index))),
              scale: u8::from($scale),
              displacement: $crate::inter_rep::Imm::from($disp) }
     };
