@@ -139,7 +139,9 @@ fn typify_statement(
             }
         }
         UntypedStatement::Continue => Ok(TypedStatement::Continue),
-        UntypedStatement::CodeBlock(cb) => Ok(TypedStatement::CodeBlock(typify_codeblock(cb, tenv)?))
+        UntypedStatement::CodeBlock(cb) => {
+            Ok(TypedStatement::CodeBlock(typify_codeblock(cb, tenv)?))
+        }
     }
 }
 
@@ -231,12 +233,11 @@ fn builtin_type(
             if params.len() > 1 {
                 arity_range_error(&builtin, 0..=1, params.len())
             } else {
-                let tparams =
-                    if params.is_empty() {
-                        vec![]
-                    } else {
-                        vec![typify_expr(params.pop().unwrap(), tenv)?]
-                    };
+                let tparams = if params.is_empty() {
+                    vec![]
+                } else {
+                    vec![typify_expr(params.pop().unwrap(), tenv)?]
+                };
                 Ok(TypedExpr {
                     typ: Type::Unit,
                     expr: Expr::BuiltIn(builtin, tparams),
@@ -272,10 +273,22 @@ fn op_type(ops: UntypedOps, tenv: &TEnv) -> Result<TypedExpr, String> {
                 expr: Expr::Op(TypedOps::Ternary(Box::new(c), Box::new(e1), Box::new(e2))),
             })
         }
-        UntypedOps::Not(v) => assert_expr_type(*v, Type::Bool, "not".to_string(), tenv),
-        UntypedOps::BitNot(v) => assert_expr_type(*v, Type::Int, "bitwise not".to_string(), tenv),
-        UntypedOps::Neg(v) => assert_expr_type(*v, Type::Int, "negation".to_string(), tenv),
-        UntypedOps::Pos(v) => assert_expr_type(*v, Type::Int, "pos".to_string(), tenv),
+        UntypedOps::Not(v) => {
+            let e = assert_expr_type(*v, Type::Bool, "not".to_string(), tenv)?;
+            Ok(op!(Bool, Not, e))
+        }
+        UntypedOps::BitNot(v) => {
+            let e = assert_expr_type(*v, Type::Int, "bitwise not".to_string(), tenv)?;
+            Ok(op!(Int, BitNot, e))
+        }
+        UntypedOps::Neg(v) => {
+            let e = assert_expr_type(*v, Type::Int, "negation".to_string(), tenv)?;
+            Ok(op!(Int, Neg, e))
+        }
+        UntypedOps::Pos(v) => {
+            let e = assert_expr_type(*v, Type::Int, "pos".to_string(), tenv)?;
+            Ok(op!(Int, Pos, e))
+        }
         UntypedOps::Plus(a, b) => {
             let s = "addition".to_string();
             let e1 = assert_expr_type(*a, Type::Int, s.clone(), tenv)?;

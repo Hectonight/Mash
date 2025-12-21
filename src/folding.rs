@@ -79,15 +79,17 @@ fn fold_if(
     }
 
     let mut fv = Vec::new();
-    for (e, cb) in v.drain(loc + 1..) {
-        let fe = fold_expr(e);
-        match fe {
-            bool!(true) => {
-                el.replace(cb);
-                break;
+    if !v.is_empty() {
+        for (e, cb) in v.drain(loc + 1..) {
+            let fe = fold_expr(e);
+            match fe {
+                bool!(true) => {
+                    el.replace(cb);
+                    break;
+                }
+                bool!(false) => (),
+                _ => fv.push((fe, fold(cb))),
             }
-            bool!(false) => (),
-            _ => fv.push((fe, fold(cb))),
         }
     }
 
