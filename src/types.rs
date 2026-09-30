@@ -8,13 +8,16 @@ Program = Statement*
 
 Statement =
 | Expr ;
-| print Expr ;
+| func(Expr,...) ;
 | let Id = Expr ;
+| let Id : Type = Expr ;
 | if Expr CodeBlock [[ else if CodeBlock ]]* [[ else CodeBlock ]] [[ ; ]]
 | Id Assignment Expr ;
 | while Expr Codeblock [[ ; ]]
 | break ;
 | continue ;
+
+
 
 CodeBlock =
 | { Statement* }
